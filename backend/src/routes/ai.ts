@@ -1,0 +1,330 @@
+import { Hono } from "hono";
+import OpenAI from "openai";
+import { z } from "zod";
+
+const aiRouter = new Hono();
+
+// Timeout constant
+const AI_TIMEOUT_MS = 60000;
+
+// =============================================================================
+// ZOD VALIDATION SCHEMAS
+// =============================================================================
+
+const messageContentSchema = z.union([
+  z.string(),
+  z.array(z.record(z.string(), z.unknown())),
+]);
+
+const messageSchema = z.object({
+  role: z.string(),
+  content: messageContentSchema,
+});
+
+const openaiChatSchema = z.object({
+  messages: z.array(messageSchema).nonempty("Messages array cannot be empty"),
+  model: z
+    .enum(["gpt-4o", "gpt-4o-mini", "gpt-4.1-2025-04-14", "o4-mini-2025-04-16", "gpt-4o-2024-11-20"])
+    .default("gpt-4o"),
+  temperature: z.number().min(0).max(2).default(0.7),
+  maxTokens: z.number().max(4096).default(2048),
+});
+
+const grokChatSchema = z.object({
+  messages: z.array(messageSchema).nonempty("Messages array cannot be empty"),
+  model: z
+    .enum(["grok-3-beta", "grok-3-latest", "grok-3-fast-latest", "grok-3-mini-latest"])
+    .default("grok-3-beta"),
+  temperature: z.number().min(0).max(2).default(0.7),
+  maxTokens: z.number().max(4096).default(2048),
+});
+
+const imageAnalyzeSchema = z.object({
+  base64Image: z.string().max(10_000_000, "Image too large (max ~10MB base64)"),
+  prompt: z.string().min(1, "Prompt is required").max(2000, "Prompt too long (max 2000 chars)"),
+  timeoutMs: z.number().min(5000).max(60000).default(30000),
+});
+
+const transcribeModelSchema = z.enum(["gpt-4o-transcribe", "whisper-1"]);
+const transcribeLanguageSchema = z.string().length(2, "Language must be a 2-letter code");
+
+// =============================================================================
+// MIDDLEWARE
+// =============================================================================
+
+// Simple API key authentication for all AI routes
+aiRouter.use("*", async (c, next) => {
+  const clientKey = c.req.header("X-App-Key");
+  if (clientKey !== process.env.APP_CLIENT_KEY) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  await next();
+});
+
+// Initialize OpenAI client (for OpenAI endpoints)
+const getOpenAIClient = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OpenAI API key not configured");
+  }
+  return new OpenAI({ apiKey });
+};
+
+// Initialize Grok client (uses OpenAI SDK with different base URL)
+const getGrokClient = () => {
+  const apiKey = process.env.GROK_API_KEY;
+  if (!apiKey) {
+    throw new Error("Grok API key not configured");
+  }
+  return new OpenAI({
+    apiKey,
+    baseURL: "https://api.x.ai/v1",
+  });
+};
+
+/**
+ * POST /chat - OpenAI chat completions
+ * Accepts: { messages, model?, temperature?, maxTokens? }
+ */
+aiRouter.post("/chat", async (c) => {
+  try {
+    const body = await c.req.json();
+    const parsed = openaiChatSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json({ error: parsed.error.issues[0]?.message || "Invalid request body" }, 400);
+    }
+
+    const { messages, model, temperature, maxTokens } = parsed.data;
+    const client = getOpenAIClient();
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+    try {
+      const response = await client.chat.completions.create(
+        {
+          model,
+          messages: messages as any,
+          temperature,
+          max_tokens: maxTokens,
+        },
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+
+      return c.json({
+        content: response.choices[0]?.message?.content || "",
+        usage: {
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0,
+        },
+      });
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === "AbortError") {
+        return c.json({ error: "Request timed out" }, 408);
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error("OpenAI chat error:", error);
+    return c.json({ error: "AI request failed" }, 500);
+  }
+});
+
+/**
+ * POST /chat/grok - Grok chat completions
+ * Accepts: { messages, model?, temperature?, maxTokens? }
+ */
+aiRouter.post("/chat/grok", async (c) => {
+  try {
+    const body = await c.req.json();
+    const parsed = grokChatSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json({ error: parsed.error.issues[0]?.message || "Invalid request body" }, 400);
+    }
+
+    const { messages, model, temperature, maxTokens } = parsed.data;
+    const client = getGrokClient();
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+    try {
+      const response = await client.chat.completions.create(
+        {
+          model,
+          messages: messages as any,
+          temperature,
+          max_tokens: maxTokens,
+        },
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+
+      return c.json({
+        content: response.choices[0]?.message?.content || "",
+        usage: {
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0,
+        },
+      });
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === "AbortError") {
+        return c.json({ error: "Request timed out" }, 408);
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error("Grok chat error:", error);
+    return c.json({ error: "AI request failed" }, 500);
+  }
+});
+
+/**
+ * POST /image/analyze - Analyze image with OpenAI GPT-4o vision
+ * Accepts: { base64Image, prompt, timeoutMs? }
+ */
+aiRouter.post("/image/analyze", async (c) => {
+  try {
+    const body = await c.req.json();
+    const parsed = imageAnalyzeSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json({ error: parsed.error.issues[0]?.message || "Invalid request body" }, 400);
+    }
+
+    const { base64Image, prompt, timeoutMs } = parsed.data;
+    const client = getOpenAIClient();
+
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(timeoutMs, AI_TIMEOUT_MS));
+
+    try {
+      const response = await client.chat.completions.create(
+        {
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:image/jpeg;base64,${base64Image}`,
+                  },
+                },
+              ],
+            },
+          ],
+          max_tokens: 500,
+        },
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+
+      return c.json({
+        content: response.choices[0]?.message?.content || "",
+      });
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === "AbortError") {
+        return c.json({ error: "Image analysis timed out" }, 408);
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error("Image analysis error:", error);
+    return c.json({ error: "Image analysis failed" }, 500);
+  }
+});
+
+/**
+ * POST /audio/transcribe - Transcribe audio with OpenAI Whisper
+ * Accepts: form data with audio file
+ */
+aiRouter.post("/audio/transcribe", async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+    const rawModel = (formData.get("model") as string) || "gpt-4o-transcribe";
+    const rawLanguage = (formData.get("language") as string) || "en";
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "Audio file is required" }, 400);
+    }
+
+    // Validate model
+    const modelResult = transcribeModelSchema.safeParse(rawModel);
+    if (!modelResult.success) {
+      return c.json({ error: modelResult.error.issues[0]?.message || "Invalid model" }, 400);
+    }
+
+    // Validate language
+    const langResult = transcribeLanguageSchema.safeParse(rawLanguage);
+    if (!langResult.success) {
+      return c.json({ error: langResult.error.issues[0]?.message || "Invalid language code" }, 400);
+    }
+
+    const model = modelResult.data;
+    const language = langResult.data;
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return c.json({ error: "AI service not configured" }, 500);
+    }
+
+    // Forward to OpenAI transcription API
+    const openaiFormData = new FormData();
+    openaiFormData.append("file", file);
+    openaiFormData.append("model", model);
+    openaiFormData.append("language", language);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: openaiFormData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.error("Transcription API error:", response.status);
+        return c.json({ error: "Transcription failed" }, 500);
+      }
+
+      const result = (await response.json()) as { text: string };
+      return c.json({ text: result.text });
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === "AbortError") {
+        return c.json({ error: "Transcription timed out" }, 408);
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error("Transcription error:", error);
+    return c.json({ error: "Transcription failed" }, 500);
+  }
+});
+
+export { aiRouter };

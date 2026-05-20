@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Make text input cursor more visible */
+input,
+textarea {
+  caret-color: #2F80ED;
+}

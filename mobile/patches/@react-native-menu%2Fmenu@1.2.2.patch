@@ -1,0 +1,46 @@
+diff --git a/node_modules/@react-native-menu/menu/.bun-tag-83969035397954ce b/.bun-tag-83969035397954ce
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/android/src/main/java/com/reactnativemenu/MenuView.kt b/android/src/main/java/com/reactnativemenu/MenuView.kt
+index 17ed7c6491b60e87fe829fb3f8841424617b4cfb..976938487d6f50446ba2d714af70c298bef599b1 100644
+--- a/android/src/main/java/com/reactnativemenu/MenuView.kt
++++ b/android/src/main/java/com/reactnativemenu/MenuView.kt
+@@ -47,8 +47,7 @@ class MenuView(private val mContext: ReactContext) : ReactViewGroup(mContext) {
+     prepareMenu()
+   }
+ 
+-  override fun setHitSlopRect(rect: Rect?) {
+-    super.setHitSlopRect(rect)
++  fun applyHitSlop(rect: Rect?) {
+     mHitSlopRect = rect
+     updateTouchDelegate()
+   }
+diff --git a/android/src/main/java/com/reactnativemenu/MenuViewManagerBase.kt b/android/src/main/java/com/reactnativemenu/MenuViewManagerBase.kt
+index 0cd90f4741508a95a63198574228c244ad41afd8..e1489d41768105bd96f06860682aee857ea6ee4c 100644
+--- a/android/src/main/java/com/reactnativemenu/MenuViewManagerBase.kt
++++ b/android/src/main/java/com/reactnativemenu/MenuViewManagerBase.kt
+@@ -120,12 +120,11 @@ abstract class MenuViewManagerBase : ReactClippingViewManager<MenuView>() {
+   }
+ 
+   @ReactProp(name = "hitSlop")
+-  fun setHitSlop(view: ReactViewGroup, @Nullable hitSlop: ReadableMap?) {
++  fun setHitSlop(view: MenuView, @Nullable hitSlop: ReadableMap?) {
+     if (hitSlop == null) {
+-      // We should keep using setters as `Val cannot be reassigned`
+-      view.setHitSlopRect(null)
++      view.applyHitSlop(null)
+     } else {
+-      view.setHitSlopRect(
++      view.applyHitSlop(
+               Rect(
+                       if (hitSlop.hasKey("left"))
+                               PixelUtil.toPixelFromDIP(hitSlop.getDouble("left")).toInt()
+@@ -206,7 +205,7 @@ abstract class MenuViewManagerBase : ReactClippingViewManager<MenuView>() {
+ 
+   @ReactProp(name = ViewProps.OVERFLOW)
+   fun setOverflow(view: ReactViewGroup, overflow: String?) {
+-    view.overflow = overflow
++    // no-op: overflow property removed in RN 0.81
+   }
+ 
+   @ReactProp(name = "backfaceVisibility")

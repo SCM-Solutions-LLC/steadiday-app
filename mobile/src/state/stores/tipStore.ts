@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -233,7 +234,6 @@ export const TIP_IDS = {
 
   // Health first-run UX
   HEALTH_FIRST_RUN: "tip_health_first_run",        // Banner on Health screen before first sync
-  HOME_HEALTH_NUDGE: "tip_home_health_nudge",      // Home tab nudge pointing to Health tab
 
   // Legacy tip IDs (for backward compatibility - kept but not actively used)
   HOME_EDIT_WIDGETS: "tip_home_edit_widgets",
@@ -298,7 +298,9 @@ export const TIP_CONFIGS: Record<string, TipConfig> = {
   [TIP_IDS.HEALTH_CONNECT_PREMIUM]: {
     id: TIP_IDS.HEALTH_CONNECT_PREMIUM,
     icon: "fitness",
-    message: "Connect to Apple Health to sync your health data",
+    message: Platform.OS === "android"
+      ? "Connect to Health Connect to sync your health data."
+      : "Connect to Apple Health to sync your health data",
     requiresPremium: true,
   },
   [TIP_IDS.MIND_BREAKS]: {
@@ -344,7 +346,9 @@ export const TIP_CONFIGS: Record<string, TipConfig> = {
   [TIP_IDS.APPLE_HEALTH_MEDS]: {
     id: TIP_IDS.APPLE_HEALTH_MEDS,
     icon: "heart-outline",
-    message: "You can also see medications from Apple Health. Go to Settings then Connected Apps.",
+    message: Platform.OS === "android"
+      ? "You can also see medications from Health Connect. Go to Settings then Connected Apps."
+      : "You can also see medications from Apple Health. Go to Settings then Connected Apps.",
     requiresPremium: true,
   },
   [TIP_IDS.CARE_SUMMARY_UNLOCK]: {

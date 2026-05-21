@@ -143,9 +143,15 @@
             "useFrameworks": "static",
             "buildReactNativeFromSource": true,
             "deploymentTarget": "17.0"
+          },
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 26
           }
         }
       ],
+      "expo-health-connect",
       "expo-asset",
       "expo-web-browser",
       "expo-secure-store",

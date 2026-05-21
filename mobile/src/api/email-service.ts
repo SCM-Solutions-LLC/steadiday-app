@@ -54,7 +54,7 @@ Your app helps you stay on top of your day:
 • Track daily tasks
 • Manage your medications
 • View your health metrics like walking, sleep, exercise, and heart rate
-• Sync with Apple Health to keep your information current
+• Sync with your health app to keep your information current
 • Use short exercises that support memory and focus
 • Connect supported apps for a single place to manage your health and wellness
 • Use helpful tools like the magnifier, flashlight, notes, and parking
@@ -100,7 +100,7 @@ Thank you for using SteadiDay.`;
           <li>Track daily tasks</li>
           <li>Manage your medications</li>
           <li>View your health metrics like walking, sleep, exercise, and heart rate</li>
-          <li>Sync with Apple Health to keep your information current</li>
+          <li>Sync with your health app to keep your information current</li>
           <li>Use short exercises that support memory and focus</li>
           <li>Connect supported apps for a single place to manage your health and wellness</li>
           <li>Use helpful tools like the magnifier, flashlight, notes, and parking</li>

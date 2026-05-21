@@ -1,9 +1,10 @@
 /**
- * SuggestedMedicationsSection - Shows Apple Health medications not yet added
+ * SuggestedMedicationsSection - Shows health provider medications not yet added
  * Premium-only feature
+ * Note: Health Connect medication sync is not currently implemented on Android
  */
 import React, { useMemo } from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useHealthRecordsStore } from "../../state/stores/healthRecordsStore";
 import { useMedicationStore } from "../../state/stores/medicationStore";
@@ -79,7 +80,7 @@ export default function SuggestedMedicationsSection({ onAddMedication }: Props) 
             className={`${textClasses.body} font-semibold`}
             style={{ color: colors.textPrimary }}
           >
-            From Apple Health
+            {Platform.OS === "android" ? "From Health Connect" : "From Apple Health"}
           </Text>
         </View>
 
@@ -170,7 +171,7 @@ export default function SuggestedMedicationsSection({ onAddMedication }: Props) 
             className={`${textClasses.small} mt-2`}
             style={{ color: colors.textSecondary }}
           >
-            Checking Apple Health...
+            {Platform.OS === "android" ? "Checking Health Connect..." : "Checking Apple Health..."}
           </Text>
         </View>
       )}

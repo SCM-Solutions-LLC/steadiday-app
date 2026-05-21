@@ -1,64 +1,111 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import React, { useState, useRef } from "react";
+import { View, Text, Pressable, ActivityIndicator, Linking } from "react-native";
+import { WebView } from "react-native-webview";
 import { Screen } from "../components/Screen";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../utils/useTheme";
-import { BackButton } from "../components/ui";
+import { ScreenErrorBoundary, BackButton } from "../components/ui";
+import * as Clipboard from "expo-clipboard";
+
+const DATA_RETENTION_URL = "https://www.steadiday.com/data-retention.html";
 
 export default function DataRetentionPolicyScreen() {
-  const { colors } = useTheme();
+  const { colors, primary } = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const webViewRef = useRef<WebView>(null);
+
+  const handleCopyURL = async () => {
+    await Clipboard.setStringAsync(DATA_RETENTION_URL);
+  };
+
+  const handleOpenInBrowser = () => {
+    Linking.openURL(DATA_RETENTION_URL);
+  };
 
   return (
-    <Screen variant="static" edges={["top"]}>
-      <View className="flex-1">
-        <View className="px-6 pt-4 pb-5">
-          <BackButton label="Settings" />
-          <Text className="text-2xl font-semibold mt-4" style={{ color: colors.textPrimary }}>Data Retention Policy</Text>
+    <ScreenErrorBoundary screenName="DataRetentionPolicy">
+      <Screen variant="static" edges={["top"]}>
+        <View className="flex-1">
+          <View className="px-6 pt-4 pb-5" style={{ backgroundColor: colors.cardBackground }}>
+            <BackButton label="Settings" />
+            <Text className="text-2xl font-semibold mt-4" style={{ color: colors.textPrimary }}>
+              Data Retention Policy
+            </Text>
+          </View>
+
+          {error ? (
+            <View className="flex-1 items-center justify-center px-8">
+              <Ionicons name="cloud-offline-outline" size={56} color={colors.textTertiary} />
+              <Text
+                className="text-lg font-semibold mt-4 mb-2 text-center"
+                style={{ color: colors.textPrimary }}
+              >
+                Unable to load
+              </Text>
+              <Text
+                className="text-base text-center mb-6"
+                style={{ color: colors.textSecondary }}
+              >
+                Please visit steadiday.com for our latest policies.
+              </Text>
+              <View className="flex-row" style={{ gap: 12 }}>
+                <Pressable
+                  onPress={handleCopyURL}
+                  className="flex-row items-center px-5 py-3 rounded-xl"
+                  style={{ backgroundColor: colors.divider }}
+                >
+                  <Ionicons name="copy-outline" size={18} color={colors.textPrimary} />
+                  <Text className="text-base font-medium ml-2" style={{ color: colors.textPrimary }}>
+                    Copy URL
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleOpenInBrowser}
+                  className="flex-row items-center px-5 py-3 rounded-xl"
+                  style={{ backgroundColor: primary }}
+                >
+                  <Ionicons name="open-outline" size={18} color="white" />
+                  <Text className="text-base font-medium ml-2" style={{ color: "white" }}>
+                    Open in Browser
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View className="flex-1">
+              {loading && (
+                <View className="absolute inset-0 z-10 items-center justify-center">
+                  <ActivityIndicator size="large" color={primary} />
+                  <Text className="text-sm mt-3" style={{ color: colors.textSecondary }}>
+                    Loading data retention policy...
+                  </Text>
+                </View>
+              )}
+              <WebView
+                ref={webViewRef}
+                source={{ uri: DATA_RETENTION_URL }}
+                onLoadEnd={() => setLoading(false)}
+                onError={() => {
+                  setLoading(false);
+                  setError(true);
+                }}
+                onHttpError={(syntheticEvent) => {
+                  const { nativeEvent } = syntheticEvent;
+                  if (nativeEvent.statusCode >= 400) {
+                    setLoading(false);
+                    setError(true);
+                  }
+                }}
+                style={{ flex: 1, opacity: loading ? 0 : 1 }}
+                startInLoadingState={false}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+              />
+            </View>
+          )}
         </View>
-
-        <ScrollView className="flex-1 px-6 py-4">
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>Last Updated: November 30, 2025</Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>How Long We Keep Your Data</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            We retain your data only as long as necessary to provide the service and comply with legal obligations. You can delete your data at any time.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Active Accounts</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            While your account is active, we keep all your data (medications, tasks, contacts, settings) to provide the service. Your data syncs across your devices and is backed up securely. Apple Health data accessed through integration is stored locally on your device and is not uploaded to our servers unless you explicitly enable cloud sync.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Inactive Accounts</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            If you stop using SteadiDay but do not delete your account, we will retain your data for up to 3 years. After 3 years of inactivity, we may delete your account and all associated data. We will send a notice before deletion.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Account Deletion</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            When you delete your account, we permanently delete most of your data within 30 days. Some data may be retained longer for legal compliance, such as transaction records or security logs.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Backup Data</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            Backup copies of your data may exist for up to 90 days after deletion. These backups are used only for disaster recovery and are securely destroyed after the retention period.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Log Data</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            Anonymous usage logs and error reports are retained for up to 1 year for troubleshooting and app improvement. These logs do not contain personally identifiable information.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Legal Requirements</Text>
-          <Text className="text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-            We may retain certain data longer if required by law, for fraud prevention, or to resolve disputes. In such cases, we retain only the minimum necessary information.
-          </Text>
-
-          <Text className="text-lg font-semibold mb-3 mt-4" style={{ color: colors.textPrimary }}>Your Control</Text>
-          <Text className="text-base leading-relaxed mb-8" style={{ color: colors.textSecondary }}>
-            You can export your data at any time from Settings → Privacy & Security → Export My Data. You can request account deletion from the same menu. All requests are processed within 30 days.
-          </Text>
-        </ScrollView>
-      </View>
-    </Screen>
+      </Screen>
+    </ScreenErrorBoundary>
   );
 }

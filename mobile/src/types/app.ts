@@ -88,9 +88,10 @@ export interface TrustedContact {
   name: string;
   relationship: string;
   phoneNumber: string;
-  isPrimary: boolean; // Primary contact shown on home widget
-  isEmergencyContact: boolean; // Will be contacted during SOS/fall detection
-  imageUri?: string; // Profile picture from phone contacts
+  isPrimary: boolean;
+  isEmergencyContact: boolean;
+  imageUri?: string;
+  optInSmsSent?: boolean;
 }
 
 // Keep for backward compatibility during migration

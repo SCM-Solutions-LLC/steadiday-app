@@ -18,6 +18,8 @@ export const EXTERNAL_URLS = {
   PRIVACY_POLICY: "https://www.steadiday.com/privacy.html",
   SECURITY: "https://www.steadiday.com/security.html",
   TERMS_OF_SERVICE: "https://www.steadiday.com/terms.html",
+  DATA_RETENTION: "https://www.steadiday.com/data-retention.html",
+  DATA_BREACH: "https://www.steadiday.com/data-breach.html",
   WEBSITE: "https://www.steadiday.com",
 } as const;
 
@@ -78,6 +80,20 @@ export async function openSecurity(): Promise<void> {
  */
 export async function openTermsOfService(): Promise<void> {
   return openURL(EXTERNAL_URLS.TERMS_OF_SERVICE);
+}
+
+/**
+ * Opens the SteadiDay Data Retention Policy page
+ */
+export async function openDataRetention(): Promise<void> {
+  return openURL(EXTERNAL_URLS.DATA_RETENTION);
+}
+
+/**
+ * Opens the SteadiDay Data Breach Response page
+ */
+export async function openDataBreach(): Promise<void> {
+  return openURL(EXTERNAL_URLS.DATA_BREACH);
 }
 
 /**

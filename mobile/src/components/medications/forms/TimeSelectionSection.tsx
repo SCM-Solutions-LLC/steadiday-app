@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, Platform, Pressable } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { TimeSelectionSectionProps } from "../types";
 import { formatTime } from "../../../utils/time";
 import { formatTimeFromDate } from "../types";
@@ -14,15 +14,12 @@ export function TimeSelectionSection({
   onUpdateTimeAtIndex,
 }: TimeSelectionSectionProps) {
   const { frequency, specificTime, multipleTimes } = formState;
-  const [androidPickerIndex, setAndroidPickerIndex] = useState<number | null>(null);
-  const [showAndroidSinglePicker, setShowAndroidSinglePicker] = useState(false);
 
   const needsMultipleTimes =
     frequency === "twice-daily" ||
     frequency === "three-times-daily" ||
     frequency === "four-times-daily";
 
-  // Don't show time selection for "as-needed" medications
   if (frequency === "as-needed") {
     return (
       <View className="mb-6">
@@ -78,7 +75,16 @@ export function TimeSelectionSection({
               <Pressable
                 onPress={() => {
                   if (Platform.OS === "android") {
-                    setAndroidPickerIndex(index);
+                    DateTimePickerAndroid.open({
+                      value: time,
+                      mode: "time",
+                      display: "default",
+                      onChange: (_event, selectedTime) => {
+                        if (_event.type !== "dismissed" && selectedTime) {
+                          onUpdateTimeAtIndex(index, selectedTime);
+                        }
+                      },
+                    });
                   }
                 }}
               >
@@ -89,7 +95,7 @@ export function TimeSelectionSection({
                   Time {index + 1}: {formatTime(formatTimeFromDate(time))}
                 </Text>
               </Pressable>
-              {(Platform.OS === "ios" || androidPickerIndex === index) && (
+              {Platform.OS === "ios" && (
                 <View
                   className="rounded-xl overflow-hidden"
                   style={{ backgroundColor: colors.cardBackground }}
@@ -97,17 +103,14 @@ export function TimeSelectionSection({
                   <DateTimePicker
                     value={time}
                     mode="time"
-                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    display="spinner"
                     onChange={(event, selectedTime) => {
-                      if (Platform.OS === "android") {
-                        setAndroidPickerIndex(null);
-                      }
                       if (selectedTime && event.type !== "dismissed") {
                         onUpdateTimeAtIndex(index, selectedTime);
                       }
                     }}
                     textColor={colors.textPrimary}
-                    {...(Platform.OS === "ios" && { themeVariant: colors.background === "#2B2B2B" ? "dark" : "light" })}
+                    themeVariant={colors.background === "#2B2B2B" ? "dark" : "light"}
                   />
                 </View>
               )}
@@ -135,7 +138,16 @@ export function TimeSelectionSection({
           <Pressable
             onPress={() => {
               if (Platform.OS === "android") {
-                setShowAndroidSinglePicker(true);
+                DateTimePickerAndroid.open({
+                  value: specificTime,
+                  mode: "time",
+                  display: "default",
+                  onChange: (_event, selectedTime) => {
+                    if (_event.type !== "dismissed" && selectedTime) {
+                      updateField("specificTime", selectedTime);
+                    }
+                  },
+                });
               }
             }}
           >
@@ -146,7 +158,7 @@ export function TimeSelectionSection({
               {formatTime(formatTimeFromDate(specificTime))}
             </Text>
           </Pressable>
-          {(Platform.OS === "ios" || showAndroidSinglePicker) && (
+          {Platform.OS === "ios" && (
             <View
               className="rounded-xl overflow-hidden"
               style={{ backgroundColor: colors.cardBackground }}
@@ -154,17 +166,14 @@ export function TimeSelectionSection({
               <DateTimePicker
                 value={specificTime}
                 mode="time"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
+                display="spinner"
                 onChange={(event, selectedTime) => {
-                  if (Platform.OS === "android") {
-                    setShowAndroidSinglePicker(false);
-                  }
                   if (selectedTime && event.type !== "dismissed") {
                     updateField("specificTime", selectedTime);
                   }
                 }}
                 textColor={colors.textPrimary}
-                {...(Platform.OS === "ios" && { themeVariant: colors.background === "#2B2B2B" ? "dark" : "light" })}
+                themeVariant={colors.background === "#2B2B2B" ? "dark" : "light"}
               />
             </View>
           )}

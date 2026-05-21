@@ -19,10 +19,12 @@ export interface FAQItem {
   keywords: string[];
   question: string;
   answer: string;
-  priority?: number; // Lower = more common/important (1-10)
-  actions?: FAQAction[]; // Deep linking action buttons
-  isSafety?: boolean; // Flag for safety/emergency FAQs (triggers stronger haptics)
-  isHealth?: boolean; // Flag for health/medication FAQs (triggers medium haptics)
+  priority?: number;
+  actions?: FAQAction[];
+  isSafety?: boolean;
+  isHealth?: boolean;
+  platforms?: ("ios" | "android")[];
+  androidAnswer?: string;
 }
 
 export interface CategoryInfo {
@@ -83,6 +85,7 @@ export const FAQ_DATABASE: FAQItem[] = [
     keywords: ["start", "begin", "first", "new user", "tutorial", "learn", "how to use"],
     question: "Where should I start as a new user?",
     answer: "Start by adding your medications in the Meds tab and your daily tasks in the Tasks tab. You can also connect your Apple Calendar in Settings > Connected Apps to see all your appointments in one place.",
+    androidAnswer: "Start by adding your medications in the Meds tab and your daily tasks in the Tasks tab. You can also connect your Google Calendar in Settings > Connected Apps to see all your appointments in one place.",
     actions: [
       { label: "Add Medication", type: "navigate", target: "AddMedication", icon: "💊" },
       { label: "Add Task", type: "navigate", target: "AddTask", icon: "📋" }
@@ -126,7 +129,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 8,
     keywords: ["ipad", "tablet", "device", "iphone only"],
     question: "Can I use SteadiDay on my iPad?",
-    answer: "Yes! SteadiDay works great on both iPhone and iPad. The app adjusts to fit your screen size, so use whichever device is most comfortable for you."
+    answer: "Yes! SteadiDay works great on both iPhone and iPad. The app adjusts to fit your screen size, so use whichever device is most comfortable for you.",
+    platforms: ["ios"]
   },
   {
     id: "gs-10",
@@ -260,7 +264,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 15,
     keywords: ["apple health", "import", "automatic", "health records", "sync medications"],
     question: "Can I import medications from Apple Health?",
-    answer: "Yes! Go to Settings > Connected Apps > Apple Health and enable the connection. Medications from your health records can sync to SteadiDay automatically."
+    answer: "Yes! Go to Settings > Connected Apps > Apple Health and enable the connection. Medications from your health records can sync to SteadiDay automatically.",
+    androidAnswer: "Medication import from Health Connect is not currently available. You can add medications manually in the Meds tab — tap 'Add a Medication' to get started."
   },
 
   // =========================================================================
@@ -392,6 +397,7 @@ export const FAQ_DATABASE: FAQItem[] = [
     keywords: ["location", "share", "gps", "where", "find me", "emergency", "send"],
     question: "Can I share my location during an emergency?",
     answer: "Yes! When you use SOS to contact your trusted contact, your current location is automatically included in the message. Make sure location services are enabled for SteadiDay in your iPhone settings.",
+    androidAnswer: "Yes! When you use SOS to contact your trusted contact, your current location is automatically included in the message. Make sure location services are enabled for SteadiDay in your phone's Settings > Apps > SteadiDay > Permissions.",
     isSafety: true
   },
   {
@@ -452,7 +458,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 10,
     keywords: ["medical", "id", "information", "allergies", "conditions", "health"],
     question: "Can I store my medical information for emergencies?",
-    answer: "For security, we recommend using Apple Health's Medical ID for this. Go to the Health app > Profile > Medical ID to add allergies, conditions, and emergency contacts that first responders can access."
+    answer: "For security, we recommend using Apple Health's Medical ID for this. Go to the Health app > Profile > Medical ID to add allergies, conditions, and emergency contacts that first responders can access.",
+    androidAnswer: "SteadiDay doesn't currently store medical ID information. You can use your Care Team tab to keep your doctors' contact details handy. Some Android phones support medical information on the lock screen — check your phone's Settings > Safety & Emergency."
   },
   {
     id: "sos-11",
@@ -481,7 +488,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 2,
     keywords: ["apple", "reminders", "sync", "connect", "import", "ios"],
     question: "How do I sync my Apple Reminders?",
-    answer: "Go to Settings > Connected Apps > Apple Reminders and toggle it on. Your Apple reminders will appear as tasks in SteadiDay so everything is in one place."
+    answer: "Go to Settings > Connected Apps > Apple Reminders and toggle it on. Your Apple reminders will appear as tasks in SteadiDay so everything is in one place.",
+    platforms: ["ios"]
   },
   {
     id: "sync-3",
@@ -489,7 +497,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 3,
     keywords: ["google", "calendar", "sync", "connect", "gmail", "android"],
     question: "Can I sync with Google Calendar?",
-    answer: "Google Calendar sync isn't available yet, but we're working on adding it in a future update. For now, you can sync with Apple Calendar and Apple Reminders."
+    answer: "Google Calendar sync isn't available yet, but we're working on adding it in a future update. For now, you can sync with Apple Calendar and Apple Reminders.",
+    androidAnswer: "Yes! Google Calendar is already available on Android. Go to Settings > Connected Apps > Google Calendar and sign in with your Google account. Your events will appear in SteadiDay alongside your tasks."
   },
   {
     id: "sync-4",
@@ -497,7 +506,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 4,
     keywords: ["two-way", "both ways", "changes", "update", "sync back", "direction"],
     question: "Does syncing work both ways?",
-    answer: "Syncing is one-way: events from Apple Calendar and Reminders are imported into SteadiDay so you can see everything together. Pull down on the screen to refresh and get the latest updates."
+    answer: "Syncing is one-way: events from Apple Calendar and Reminders are imported into SteadiDay so you can see everything together. Pull down on the screen to refresh and get the latest updates.",
+    androidAnswer: "Syncing is one-way: events from Google Calendar are imported into SteadiDay so you can see everything together. Pull down on the screen to refresh and get the latest updates."
   },
   {
     id: "sync-5",
@@ -621,7 +631,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 7,
     keywords: ["steps", "walking", "activity", "exercise", "movement"],
     question: "How do I see my daily step count?",
-    answer: "Go to Settings > Connected Apps > Apple Health and enable the connection. Once connected, your daily steps will appear on your Home screen and in the Health tab."
+    answer: "Go to Settings > Connected Apps > Apple Health and enable the connection. Once connected, your daily steps will appear on your Home screen and in the Health tab.",
+    androidAnswer: "Go to Settings > Connected Apps > Health Connect and enable the connection. Once connected, your daily steps will appear on your Home screen and in the Health tab."
   },
   {
     id: "health-8",
@@ -629,7 +640,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 8,
     keywords: ["heart", "rate", "pulse", "bpm", "heart rate"],
     question: "Can I see my heart rate in the app?",
-    answer: "Connect Apple Health in Settings > Connected Apps. If you have an Apple Watch or compatible device that records heart rate, that data will appear in the Health tab."
+    answer: "Connect Apple Health in Settings > Connected Apps. If you have an Apple Watch or compatible device that records heart rate, that data will appear in the Health tab.",
+    androidAnswer: "Connect Health Connect in Settings > Connected Apps. If you have a fitness tracker or smartwatch that records heart rate to Health Connect, that data will appear in the Health tab."
   },
   {
     id: "health-9",
@@ -637,7 +649,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 9,
     keywords: ["weight", "track", "log", "pounds", "scale"],
     question: "How do I track my weight over time?",
-    answer: "Connect Apple Health to see weight data from your smart scale. You can also log weight manually in the Apple Health app, and it will sync to SteadiDay automatically."
+    answer: "Connect Apple Health to see weight data from your smart scale. You can also log weight manually in the Apple Health app, and it will sync to SteadiDay automatically.",
+    androidAnswer: "Connect Health Connect to see weight data from your smart scale. You can also log weight in any app that syncs to Health Connect, and it will appear in SteadiDay automatically."
   },
   {
     id: "health-10",
@@ -653,7 +666,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 11,
     keywords: ["lab", "results", "test", "blood work", "cholesterol", "health", "tab"],
     question: "What health metrics can I see in the Health tab?",
-    answer: "The Health tab shows your steps, heart rate, exercise minutes, sleep, and weight synced from Apple Health. You can also manually enter blood pressure readings to track over time."
+    answer: "The Health tab shows your steps, heart rate, exercise minutes, sleep, and weight synced from Apple Health. You can also manually enter blood pressure readings to track over time.",
+    androidAnswer: "The Health tab shows your steps, heart rate, exercise minutes, sleep, and weight synced from Health Connect. You can also manually enter blood pressure readings to track over time."
   },
   {
     id: "health-12",
@@ -661,7 +675,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 12,
     keywords: ["history", "trends", "past", "over time", "progress"],
     question: "Can I see my health history and trends over time?",
-    answer: "The Health tab shows today's metrics. For detailed history, graphs, and trends over time, we recommend checking the Apple Health app, which provides comprehensive health insights."
+    answer: "The Health tab shows today's metrics. For detailed history, graphs, and trends over time, we recommend checking the Apple Health app, which provides comprehensive health insights.",
+    androidAnswer: "The Health tab shows today's metrics. For detailed history, graphs, and trends over time, check the Health Connect app or your fitness tracker's companion app for comprehensive health insights."
   },
 
   // =========================================================================
@@ -681,7 +696,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 2,
     keywords: ["dark", "mode", "night", "light", "bright", "theme", "black"],
     question: "How do I switch to dark mode?",
-    answer: "Go to Settings > Appearance and choose 'Dark' mode. You can also select 'System' to automatically match your iPhone's settings (dark at night, light during day)."
+    answer: "Go to Settings > Appearance and choose 'Dark' mode. You can also select 'System' to automatically match your iPhone's settings (dark at night, light during day).",
+    androidAnswer: "Go to Settings > Appearance and choose 'Dark' mode. You can also select 'System' to automatically match your phone's settings (dark at night, light during day)."
   },
   {
     id: "access-3",
@@ -705,7 +721,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 5,
     keywords: ["voiceover", "screen reader", "blind", "speak", "read aloud"],
     question: "Does the app work with VoiceOver screen reader?",
-    answer: "Yes! SteadiDay is designed to work with iPhone's VoiceOver screen reader. All buttons and content have accessibility labels so VoiceOver can describe them properly."
+    answer: "Yes! SteadiDay is designed to work with iPhone's VoiceOver screen reader. All buttons and content have accessibility labels so VoiceOver can describe them properly.",
+    androidAnswer: "Yes! SteadiDay is designed to work with Android's TalkBack screen reader. All buttons and content have accessibility labels so TalkBack can describe them properly."
   },
   {
     id: "access-6",
@@ -729,7 +746,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 8,
     keywords: ["reduce", "motion", "animation", "movement", "dizzy", "motion sickness"],
     question: "Can I reduce the animations if they bother me?",
-    answer: "SteadiDay respects your iPhone's 'Reduce Motion' setting. Go to iPhone Settings > Accessibility > Motion > Reduce Motion to minimize animations throughout the app."
+    answer: "SteadiDay respects your iPhone's 'Reduce Motion' setting. Go to iPhone Settings > Accessibility > Motion > Reduce Motion to minimize animations throughout the app.",
+    androidAnswer: "SteadiDay respects your phone's animation settings. Go to phone Settings > Accessibility > Remove Animations (or Settings > Developer Options > reduce animation scale) to minimize animations throughout the app."
   },
   {
     id: "access-9",
@@ -847,7 +865,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 1,
     keywords: ["notification", "not working", "no alerts", "reminder", "did not get", "missing", "silent", "no notification"],
     question: "I'm not receiving any notifications or reminders",
-    answer: "First, check that notifications are enabled: go to iPhone Settings > SteadiDay > Notifications and make sure they're on. Also check that Do Not Disturb is off. Try toggling notifications off and back on if they're still not working."
+    answer: "First, check that notifications are enabled: go to iPhone Settings > SteadiDay > Notifications and make sure they're on. Also check that Do Not Disturb is off. Try toggling notifications off and back on if they're still not working.",
+    androidAnswer: "First, check that notifications are enabled: go to phone Settings > Apps > SteadiDay > Notifications and make sure they're on. Also check that Do Not Disturb is off. Make sure battery optimization isn't restricting SteadiDay — go to Settings > Apps > SteadiDay > Battery and select 'Unrestricted'."
   },
   {
     id: "trouble-2",
@@ -855,7 +874,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 2,
     keywords: ["crash", "freeze", "stuck", "not responding", "will not open", "closes", "black screen", "freezing"],
     question: "The app keeps crashing or freezing",
-    answer: "Try these steps: 1) Force close the app (swipe up from bottom, swipe SteadiDay away). 2) Restart your iPhone. 3) Check the App Store for updates. 4) If it still doesn't work, try deleting and reinstalling - your synced data will restore."
+    answer: "Try these steps: 1) Force close the app (swipe up from bottom, swipe SteadiDay away). 2) Restart your iPhone. 3) Check the App Store for updates. 4) If it still doesn't work, try deleting and reinstalling - your synced data will restore.",
+    androidAnswer: "Try these steps: 1) Force close the app (open recent apps, swipe SteadiDay away). 2) Restart your phone. 3) Check the Google Play Store for updates. 4) If it still doesn't work, try clearing the app cache in Settings > Apps > SteadiDay > Storage > Clear Cache."
   },
   {
     id: "trouble-3",
@@ -895,7 +915,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 7,
     keywords: ["purchase", "did not work", "charged", "no premium", "payment", "failed", "money"],
     question: "I was charged but don't have Premium access",
-    answer: "Go to Settings > Manage Subscription > Restore Purchases. Make sure you're signed into the same Apple ID you used for the purchase. If it's still not working, check iPhone Settings > [Your Name] > Subscriptions to verify the purchase went through."
+    answer: "Go to Settings > Manage Subscription > Restore Purchases. Make sure you're signed into the same Apple ID you used for the purchase. If it's still not working, check iPhone Settings > [Your Name] > Subscriptions to verify the purchase went through.",
+    androidAnswer: "Go to Settings > Manage Subscription > Restore Purchases. Make sure you're signed into the same Google account you used for the purchase. If it's still not working, check Google Play Store > Profile > Payments & Subscriptions to verify the purchase went through."
   },
   {
     id: "trouble-8",
@@ -903,7 +924,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 8,
     keywords: ["slow", "laggy", "takes long", "loading", "waiting", "spinning"],
     question: "The app feels slow or takes a long time to load",
-    answer: "Try closing other apps running in the background. Check your iPhone storage (Settings > General > iPhone Storage) - the app works best with 500MB+ free space. Restart your phone and make sure you have the latest app version."
+    answer: "Try closing other apps running in the background. Check your iPhone storage (Settings > General > iPhone Storage) - the app works best with 500MB+ free space. Restart your phone and make sure you have the latest app version.",
+    androidAnswer: "Try closing other apps running in the background. Check your phone's storage (Settings > Storage) — the app works best with 500MB+ free space. Restart your phone and make sure you have the latest app version from the Google Play Store."
   },
   {
     id: "trouble-9",
@@ -911,7 +933,17 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 9,
     keywords: ["sound", "no sound", "silent", "audio", "can not hear", "volume", "mute"],
     question: "I can't hear any sounds from the app",
-    answer: "Check the silent switch on the side of your iPhone (make sure it's not showing orange). Go to SteadiDay Settings > Sounds & Haptics and make sure sounds are enabled. Also check your iPhone's volume level and try restarting the app."
+    answer: "Check the silent switch on the side of your iPhone (make sure it's not showing orange). Go to SteadiDay Settings > Sounds & Haptics and make sure sounds are enabled. Also check your iPhone's volume level and try restarting the app.",
+    platforms: ["ios"]
+  },
+  {
+    id: "trouble-9-android",
+    category: "troubleshooting",
+    priority: 9,
+    keywords: ["sound", "no sound", "silent", "audio", "can not hear", "volume", "mute"],
+    question: "I can't hear any sounds from the app",
+    answer: "Check that your phone's volume is turned up (use the volume buttons). Go to SteadiDay Settings > Sounds & Haptics and make sure sounds are enabled. Also check that Do Not Disturb is off and try restarting the app.",
+    platforms: ["android"]
   },
   {
     id: "trouble-10",
@@ -935,7 +967,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 12,
     keywords: ["widget", "not updating", "home screen", "ios", "stuck", "old", "outdated widget"],
     question: "The home screen widget isn't showing current information",
-    answer: "iOS widgets refresh periodically to save battery. Try removing the widget and adding it again. Also make sure SteadiDay has background refresh permission in iPhone Settings > General > Background App Refresh."
+    answer: "iOS widgets refresh periodically to save battery. Try removing the widget and adding it again. Also make sure SteadiDay has background refresh permission in iPhone Settings > General > Background App Refresh.",
+    platforms: ["ios"]
   },
   {
     id: "trouble-13",
@@ -951,7 +984,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 14,
     keywords: ["permissions", "allow", "access", "denied", "calendar", "contacts", "health", "asking again"],
     question: "The app keeps asking for permissions I already denied",
-    answer: "If you denied a permission before, you'll need to enable it manually. Go to iPhone Settings > SteadiDay and turn on the permissions you need. This is required for features like calendar sync, health tracking, and emergency location."
+    answer: "If you denied a permission before, you'll need to enable it manually. Go to iPhone Settings > SteadiDay and turn on the permissions you need. This is required for features like calendar sync, health tracking, and emergency location.",
+    androidAnswer: "If you denied a permission before, you'll need to enable it manually. Go to phone Settings > Apps > SteadiDay > Permissions and turn on the permissions you need. This is required for features like calendar sync, health tracking, and emergency location."
   },
   {
     id: "trouble-15",
@@ -959,7 +993,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 15,
     keywords: ["new phone", "transfer", "switch", "iphone", "moved", "backup", "restore data"],
     question: "How do I transfer my data to a new phone?",
-    answer: "Restore your new iPhone from an iCloud or iTunes backup - SteadiDay data transfers automatically. For Premium, sign into the same Apple ID on your new phone and tap 'Restore Purchases' in Settings."
+    answer: "Restore your new iPhone from an iCloud or iTunes backup - SteadiDay data transfers automatically. For Premium, sign into the same Apple ID on your new phone and tap 'Restore Purchases' in Settings.",
+    androidAnswer: "If you backed up your old phone using Google backup, restore your new phone from that backup — SteadiDay data may transfer automatically. You can also use SteadiDay's Export My Data feature (on the Home screen) to save a backup file and import it on your new device."
   },
   {
     id: "trouble-16",
@@ -967,7 +1002,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 16,
     keywords: ["wrong time", "timezone", "clock", "schedule", "reminder time"],
     question: "My reminders are coming at the wrong times",
-    answer: "Make sure your iPhone's date and time are correct: go to iPhone Settings > General > Date & Time and enable 'Set Automatically'. If you recently traveled, the app should adjust to your new timezone automatically."
+    answer: "Make sure your iPhone's date and time are correct: go to iPhone Settings > General > Date & Time and enable 'Set Automatically'. If you recently traveled, the app should adjust to your new timezone automatically.",
+    androidAnswer: "Make sure your phone's date and time are correct: go to phone Settings > System > Date & Time and enable 'Set Automatically'. If you recently traveled, the app should adjust to your new timezone automatically."
   },
   {
     id: "trouble-17",
@@ -983,7 +1019,8 @@ export const FAQ_DATABASE: FAQItem[] = [
     priority: 18,
     keywords: ["camera", "not working", "photo", "can not take", "black", "scanner"],
     question: "The camera isn't working when I try to take a photo",
-    answer: "Make sure SteadiDay has camera permission: go to iPhone Settings > SteadiDay > Camera and turn it on. Try closing and reopening the app. If the camera shows a black screen, restart your iPhone."
+    answer: "Make sure SteadiDay has camera permission: go to iPhone Settings > SteadiDay > Camera and turn it on. Try closing and reopening the app. If the camera shows a black screen, restart your iPhone.",
+    androidAnswer: "Make sure SteadiDay has camera permission: go to phone Settings > Apps > SteadiDay > Permissions > Camera and turn it on. Try closing and reopening the app. If the camera shows a black screen, restart your phone."
   },
   {
     id: "trouble-19",
@@ -1012,14 +1049,25 @@ function adaptFaqText(text: string): string {
     .replace(/Apple Health/g, "Health Connect")
     .replace(/Apple Watch/g, "your fitness tracker")
     .replace(/the Health app/g, "Health Connect")
+    .replace(/Apple Calendar/g, "Google Calendar")
+    .replace(/App Store/g, "Google Play Store")
+    .replace(/VoiceOver/g, "TalkBack")
+    .replace(/iOS widgets/g, "Android widgets")
     .replace(/iPhone Settings/g, "phone Settings")
+    .replace(/iPhone's/g, "your phone's")
+    .replace(/your iPhone/g, "your phone")
+    .replace(/Restart your iPhone/g, "Restart your phone")
+    .replace(/iPhone/g, "phone")
     .replace(/same Apple ID/g, "same Google account")
     .replace(/iCloud or iTunes backup/g, "Google backup")
-    .replace(/Restore your new iPhone from/g, "Restore your new phone from");
+    .replace(/Restore your new phone from/g, "Restore your new phone from");
 }
 
 function adaptFaqItem(faq: FAQItem): FAQItem {
   if (Platform.OS === "ios") return faq;
+  if (faq.androidAnswer) {
+    return { ...faq, question: adaptFaqText(faq.question), answer: faq.androidAnswer };
+  }
   return {
     ...faq,
     question: adaptFaqText(faq.question),
@@ -1029,8 +1077,10 @@ function adaptFaqItem(faq: FAQItem): FAQItem {
 
 // Get FAQs by category ID, sorted by priority (most common first)
 export function getFaqsByCategory(categoryId: string): FAQItem[] {
+  const currentPlatform = Platform.OS as "ios" | "android";
   return FAQ_DATABASE
     .filter(faq => faq.category === categoryId)
+    .filter(faq => !faq.platforms || faq.platforms.includes(currentPlatform))
     .sort((a, b) => (a.priority || 99) - (b.priority || 99))
     .map(adaptFaqItem);
 }
@@ -1042,5 +1092,8 @@ export function getCategoryInfo(categoryId: string): CategoryInfo | undefined {
 
 // Get all FAQ items with platform-adapted text
 export function getAdaptedFaqDatabase(): FAQItem[] {
-  return FAQ_DATABASE.map(adaptFaqItem);
+  const currentPlatform = Platform.OS as "ios" | "android";
+  return FAQ_DATABASE
+    .filter(faq => !faq.platforms || faq.platforms.includes(currentPlatform))
+    .map(adaptFaqItem);
 }

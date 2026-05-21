@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, Modal, ScrollView } from "react-native";
+import { View, Text, Pressable, Modal, ScrollView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useSettingsStore } from "../../state/stores/settingsStore";
@@ -188,7 +188,9 @@ export default function PremiumUpgradePrompt({
                   {
                     icon: "fitness",
                     title: "Complete Health View",
-                    description: "See all your Apple Health data in one place",
+                    description: Platform.OS === "android"
+                      ? "See all your Health Connect data in one place"
+                      : "See all your Apple Health data in one place",
                   },
                   {
                     icon: "build",

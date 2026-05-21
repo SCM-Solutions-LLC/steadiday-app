@@ -250,13 +250,23 @@ export async function scheduleMedicationNotification(
             categoryIdentifier: "medication",
           },
           trigger: shouldRepeat
-            ? {
-                type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-                hour: firstTriggerDate.getHours(),
-                minute: firstTriggerDate.getMinutes(),
-                repeats: true,
-                channelId: Platform.OS === "android" ? "medications" : undefined,
-              }
+            ? (Platform.OS === "android"
+              ? {
+                  type: medication.frequency === "weekly"
+                    ? Notifications.SchedulableTriggerInputTypes.WEEKLY
+                    : Notifications.SchedulableTriggerInputTypes.DAILY,
+                  hour: firstTriggerDate.getHours(),
+                  minute: firstTriggerDate.getMinutes(),
+                  ...(medication.frequency === "weekly" ? { weekday: firstTriggerDate.getDay() + 1 } : {}),
+                  channelId: "medications",
+                }
+              : {
+                  type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+                  hour: firstTriggerDate.getHours(),
+                  minute: firstTriggerDate.getMinutes(),
+                  repeats: true,
+                  channelId: undefined,
+                })
             : {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
                 date: firstTriggerDate,
@@ -295,13 +305,23 @@ export async function scheduleMedicationNotification(
             categoryIdentifier: "medication",
           },
           trigger: shouldRepeat
-            ? {
-                type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-                hour: secondTriggerDate.getHours(),
-                minute: secondTriggerDate.getMinutes(),
-                repeats: true,
-                channelId: Platform.OS === "android" ? "medications" : undefined,
-              }
+            ? (Platform.OS === "android"
+              ? {
+                  type: medication.frequency === "weekly"
+                    ? Notifications.SchedulableTriggerInputTypes.WEEKLY
+                    : Notifications.SchedulableTriggerInputTypes.DAILY,
+                  hour: secondTriggerDate.getHours(),
+                  minute: secondTriggerDate.getMinutes(),
+                  ...(medication.frequency === "weekly" ? { weekday: secondTriggerDate.getDay() + 1 } : {}),
+                  channelId: "medications",
+                }
+              : {
+                  type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+                  hour: secondTriggerDate.getHours(),
+                  minute: secondTriggerDate.getMinutes(),
+                  repeats: true,
+                  channelId: undefined,
+                })
             : {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
                 date: secondTriggerDate,
@@ -387,13 +407,23 @@ export async function scheduleTaskNotification(
           categoryIdentifier: "task",
         },
         trigger: shouldRepeat
-          ? {
-              type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-              hour: firstTriggerDate.getHours(),
-              minute: firstTriggerDate.getMinutes(),
-              repeats: true,
-              channelId: Platform.OS === "android" ? "tasks" : undefined,
-            }
+          ? (Platform.OS === "android"
+            ? {
+                type: task.frequency === "weekly"
+                  ? Notifications.SchedulableTriggerInputTypes.WEEKLY
+                  : Notifications.SchedulableTriggerInputTypes.DAILY,
+                hour: firstTriggerDate.getHours(),
+                minute: firstTriggerDate.getMinutes(),
+                ...(task.frequency === "weekly" ? { weekday: firstTriggerDate.getDay() + 1 } : {}),
+                channelId: "tasks",
+              }
+            : {
+                type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+                hour: firstTriggerDate.getHours(),
+                minute: firstTriggerDate.getMinutes(),
+                repeats: true,
+                channelId: undefined,
+              })
           : {
               type: Notifications.SchedulableTriggerInputTypes.DATE,
               date: firstTriggerDate,
@@ -426,13 +456,23 @@ export async function scheduleTaskNotification(
             categoryIdentifier: "task",
           },
           trigger: shouldRepeat
-            ? {
-                type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-                hour: secondTriggerDate.getHours(),
-                minute: secondTriggerDate.getMinutes(),
-                repeats: true,
-                channelId: Platform.OS === "android" ? "tasks" : undefined,
-              }
+            ? (Platform.OS === "android"
+              ? {
+                  type: task.frequency === "weekly"
+                    ? Notifications.SchedulableTriggerInputTypes.WEEKLY
+                    : Notifications.SchedulableTriggerInputTypes.DAILY,
+                  hour: secondTriggerDate.getHours(),
+                  minute: secondTriggerDate.getMinutes(),
+                  ...(task.frequency === "weekly" ? { weekday: secondTriggerDate.getDay() + 1 } : {}),
+                  channelId: "tasks",
+                }
+              : {
+                  type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+                  hour: secondTriggerDate.getHours(),
+                  minute: secondTriggerDate.getMinutes(),
+                  repeats: true,
+                  channelId: undefined,
+                })
             : {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
                 date: secondTriggerDate,
@@ -687,13 +727,20 @@ export async function scheduleWaterReminders(reminderTimes?: string[]): Promise<
           sound: "default",
           priority: Notifications.AndroidNotificationPriority.DEFAULT,
         },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: hour,
-          minute: minute,
-          repeats: true,
-          channelId: Platform.OS === "android" ? "water" : undefined,
-        },
+        trigger: Platform.OS === "android"
+          ? {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
+              hour: hour,
+              minute: minute,
+              channelId: "water",
+            }
+          : {
+              type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+              hour: hour,
+              minute: minute,
+              repeats: true,
+              channelId: undefined,
+            },
       });
 
       notificationIds.push(notificationId);
@@ -830,13 +877,20 @@ export async function scheduleMindBreaksReminder(
         sound: "default",
         priority: Notifications.AndroidNotificationPriority.DEFAULT,
       },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-        hour: hour,
-        minute: minute,
-        repeats: true,
-        channelId: Platform.OS === "android" ? "mindbreaks" : undefined,
-      },
+      trigger: Platform.OS === "android"
+        ? {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: hour,
+            minute: minute,
+            channelId: "mindbreaks",
+          }
+        : {
+            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+            hour: hour,
+            minute: minute,
+            repeats: true,
+            channelId: undefined,
+          },
     });
 
     logger.log(

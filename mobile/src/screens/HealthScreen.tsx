@@ -720,13 +720,15 @@ export default function HealthScreen() {
                   style={{ backgroundColor: colors.infoBackground, borderColor: colors.info }}
                   className="rounded-2xl p-5 mb-6 border"
                   accessibilityRole="text"
-                  accessibilityLabel="Connect Apple Health in Settings to see your health data here."
+                  accessibilityLabel={Platform.OS === "android" ? "Connect Health Connect in Settings to see your health data here." : "Connect Apple Health in Settings to see your health data here."}
                 >
                   <View className="flex-row items-start">
                     <Ionicons name="sparkles-outline" size={24} color={colors.info} style={{ marginRight: 12, marginTop: 2 }} />
                     <View className="flex-1">
                       <Text className={`${textClasses.body} leading-relaxed`} style={{ color: colors.textPrimary }}>
-                        {"Connect Apple Health in Settings to see your steps, heart rate, and sleep data here."}
+                        {Platform.OS === "android"
+                          ? "Connect Health Connect in Settings to see your steps, heart rate, and sleep data here."
+                          : "Connect Apple Health in Settings to see your steps, heart rate, and sleep data here."}
                       </Text>
                     </View>
                     <Pressable

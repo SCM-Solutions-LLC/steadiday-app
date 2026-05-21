@@ -8,6 +8,7 @@ export interface DailyTip {
   id: string;
   title: string;
   content: string;
+  androidContent?: string;
 }
 
 export interface LearningCategory {
@@ -143,14 +144,14 @@ const techMadeEasyTips: DailyTip[] = [
   { id: "te-6", title: "Add Favorites", content: "Put your most-called contacts in Favorites. Open Phone app, tap Favorites, then the + to add people." },
   { id: "te-7", title: "Enable Flashlight Quickly", content: "Swipe down from the top corner of your screen to find the flashlight button. Great for dark areas!" },
   { id: "te-8", title: "Set Medication Reminders", content: "Use the Clock app to set daily alarms for medication times. Label each alarm with the medicine name." },
-  { id: "te-9", title: "Video Call Family", content: "FaceTime or video calls let you see loved ones. It is as easy as selecting their name and tapping the video icon." },
+  { id: "te-9", title: "Video Call Family", content: "FaceTime or video calls let you see loved ones. It is as easy as selecting their name and tapping the video icon.", androidContent: "Video calls using Google Meet, WhatsApp, or Duo let you see loved ones. It is as easy as selecting their name and tapping the video icon." },
   { id: "te-10", title: "Organize Apps in Folders", content: "Press and hold an app, then drag it onto another app to create a folder. Keeps your screen tidy!" },
-  { id: "te-11", title: "Use Medical ID", content: "Set up Medical ID in the Health app with emergency contacts and health conditions. First responders can access it." },
+  { id: "te-11", title: "Use Medical ID", content: "Set up Medical ID in the Health app with emergency contacts and health conditions. First responders can access it.", androidContent: "Set up Emergency Information in your phone's Settings under Safety & Emergency. Add emergency contacts and health conditions. First responders can access it from your lock screen." },
   { id: "te-12", title: "Enable Dark Mode", content: "Dark mode is easier on your eyes at night. Find it in Settings > Display > Dark Mode." },
-  { id: "te-13", title: "Back Up Your Photos", content: "Turn on iCloud Photos or Google Photos to automatically save your pictures. You will never lose precious memories." },
+  { id: "te-13", title: "Back Up Your Photos", content: "Turn on iCloud Photos or Google Photos to automatically save your pictures. You will never lose precious memories.", androidContent: "Turn on Google Photos to automatically save your pictures. You will never lose precious memories." },
   { id: "te-14", title: "Use Speak Selection", content: "Have your phone read text aloud. Enable it in Settings > Accessibility > Spoken Content > Speak Selection." },
-  { id: "te-15", title: "Find My Device", content: "Lost your phone? Use Find My iPhone/Find My Device from another device or computer to locate it." },
-  { id: "te-16", title: "Wi-Fi Calling", content: "If cell signal is weak at home, enable Wi-Fi Calling in Settings > Phone. Uses your internet for clearer calls." },
+  { id: "te-15", title: "Find My Device", content: "Lost your phone? Use Find My iPhone/Find My Device from another device or computer to locate it.", androidContent: "Lost your phone? Use Find My Device from another device or computer to locate it." },
+  { id: "te-16", title: "Wi-Fi Calling", content: "If cell signal is weak at home, enable Wi-Fi Calling in Settings > Phone. Uses your internet for clearer calls.", androidContent: "If cell signal is weak at home, enable Wi-Fi Calling in Settings under Network and Internet. Uses your internet for clearer calls." },
   { id: "te-17", title: "Emergency SOS", content: "Pressing the side button 5 times quickly calls emergency services. Know this feature—it could save a life." },
   { id: "te-18", title: "Reduce Motion", content: "If screen animations make you dizzy, go to Settings > Accessibility > Motion > Reduce Motion." },
   { id: "te-19", title: "Bold Text Option", content: "Make text easier to read by enabling Bold Text in Settings > Display & Brightness." },
@@ -158,14 +159,14 @@ const techMadeEasyTips: DailyTip[] = [
   { id: "te-21", title: "Adjust Brightness", content: "If your screen is too bright or dim, swipe down from the top corner and adjust the brightness slider." },
   { id: "te-22", title: "Use Calendar Reminders", content: "Add appointments to your Calendar app with alerts. You will get a notification before each event." },
   { id: "te-23", title: "Close Unused Apps", content: "Swipe up from the bottom and pause to see open apps. Swipe them up to close. This can save battery." },
-  { id: "te-24", title: "Silence Unknown Callers", content: "Block spam calls! In Settings > Phone, turn on \"Silence Unknown Callers.\" Known contacts still ring through." },
-  { id: "te-25", title: "Use Reading Mode", content: "In Safari, tap \"AA\" in the address bar and select \"Show Reader\" for a cleaner, easier-to-read view of articles." },
+  { id: "te-24", title: "Silence Unknown Callers", content: "Block spam calls! In Settings > Phone, turn on \"Silence Unknown Callers.\" Known contacts still ring through.", androidContent: "Block spam calls! Open your Phone app, go to Settings, and enable Caller ID and Spam protection. Unknown callers can be sent straight to voicemail." },
+  { id: "te-25", title: "Use Reading Mode", content: "In Safari, tap \"AA\" in the address bar and select \"Show Reader\" for a cleaner, easier-to-read view of articles.", androidContent: "In Chrome, tap the three-dot menu and select Simplified View for a cleaner, easier-to-read view of articles." },
   { id: "te-26", title: "Keyboard Shortcuts", content: "Create shortcuts for phrases you type often. Go to Settings > General > Keyboard > Text Replacement." },
   { id: "te-27", title: "Check Battery Health", content: "See your battery condition in Settings > Battery > Battery Health. Replace if it is below 80%." },
   { id: "te-28", title: "Use Night Shift", content: "Reduce blue light in the evening with Night Shift. Find it in Settings > Display > Night Shift." },
   { id: "te-29", title: "Restart Fixes Problems", content: "If your phone is acting strange, try turning it off and on again. This fixes many common issues!" },
   { id: "te-30", title: "Keep Software Updated", content: "Updates include important security fixes. Check Settings > General > Software Update regularly." },
-  { id: "te-31", title: "Ask for Help", content: "Do not struggle alone! Ask family, friends, or visit an Apple Store or phone carrier for free tech help." },
+  { id: "te-31", title: "Ask for Help", content: "Do not struggle alone! Ask family, friends, or visit an Apple Store or phone carrier for free tech help.", androidContent: "Do not struggle alone! Ask family, friends, or visit your phone carrier store for free tech help." },
 ];
 
 // =============================================================================
@@ -213,6 +214,15 @@ export const LEARNING_CATEGORIES: LearningCategory[] = [
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
+
+import { Platform } from "react-native";
+
+export function getTipContent(tip: DailyTip): string {
+  if (Platform.OS === "android" && tip.androidContent) {
+    return tip.androidContent;
+  }
+  return tip.content;
+}
 
 /**
  * Get today's tip for a category based on day of year

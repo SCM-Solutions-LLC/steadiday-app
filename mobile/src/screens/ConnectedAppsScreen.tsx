@@ -15,6 +15,7 @@ import { syncHealthRecordsOnConnect } from "../utils/healthRecordsSyncHelper";
 import { logger } from "../utils/logger";
 import CustomSwitch from "../components/CustomSwitch";
 import { RootStackParamList } from "../navigation/RootNavigator";
+import { isAndroidFeaturesActive } from "../config/platformConfig";
 
 type HealthFailureKind = "permissions-denied" | "sync-failed";
 
@@ -47,10 +48,9 @@ export default function ConnectedAppsScreen() {
   // Apple Health connection failure state (drives retry/helper UI)
   const [healthFailure, setHealthFailure] = useState<HealthFailureKind | null>(null);
 
-  // Filter integrations: show Apple Calendar, Apple Reminders, and Apple Health
   const visibleIntegrations = useMemo(() => {
     return integrations.filter((integration) => {
-      if (integration.id === "google-calendar") return false;
+      if (integration.id === "google-calendar" && !isAndroidFeaturesActive()) return false;
       return integration.platforms.includes(Platform.OS as "ios" | "android");
     });
   }, [integrations]);
@@ -228,7 +228,7 @@ export default function ConnectedAppsScreen() {
                 >
                   {Platform.OS === "ios"
                     ? "Connect Apple Calendar, Apple Reminders, and Apple Health to sync your tasks, appointments, and health data."
-                    : "Connect Health Connect to sync your health and activity data."}
+                    : "Connect Health Connect and Google Calendar to sync your health data and calendar events."}
                 </Text>
               </View>
             </View>

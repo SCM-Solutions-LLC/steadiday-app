@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, Pressable, Modal, useWindowDimensions, ScrollView } from "react-native";
+import { View, Text, Pressable, Modal, useWindowDimensions, ScrollView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../utils/useTheme";
 import { useSettingsStore } from "../../state/stores/settingsStore";
@@ -77,7 +77,9 @@ export function GuidedTourOverlay({ visible, step, totalSteps, onNext, onSkip }:
       iconColor: primary,
       iconBg: colors.primaryLight || primary + "20",
       title: "Health Tracking",
-      message: "Track your steps, heart rate, sleep, and more. Connect Apple Health in Settings to sync automatically.",
+      message: Platform.OS === "android"
+        ? "Track your steps, heart rate, sleep, and more. Connect Health Connect in Settings to sync automatically."
+        : "Track your steps, heart rate, sleep, and more. Connect Apple Health in Settings to sync automatically.",
       arrowDirection: "down",
       cardPosition: "center",
     },

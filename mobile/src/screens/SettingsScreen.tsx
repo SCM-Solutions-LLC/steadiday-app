@@ -1,9 +1,8 @@
 // Settings Screen - Simplified navigation list with search
 import React, { useCallback, useState, useMemo } from "react";
-import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, ScrollView, TextInput, Platform, Linking } from "react-native";
 import { Screen } from "../components/Screen";
 import { useNavigation } from "@react-navigation/native";
-import { Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSettingsStore } from "../state/stores/settingsStore";
 import { useSubscriptionStore } from "../state/stores/subscriptionStore";
@@ -732,9 +731,13 @@ export default function SettingsScreen() {
                   iconColor="#D4A853"
                   iconBgColor="rgba(212, 168, 83, 0.15)"
                   title="Rate SteadiDay"
-                  subtitle="Leave a review on the App Store"
+                  subtitle={Platform.OS === "android" ? "Leave a review on Google Play" : "Leave a review on the App Store"}
                   onPress={() => {
-                    Linking.openURL('https://apps.apple.com/app/steadiday/id6758526744?action=write-review');
+                    Linking.openURL(
+                      Platform.OS === "android"
+                        ? "https://play.google.com/store/apps/details?id=com.vibecode.steadiday"
+                        : "https://apps.apple.com/app/steadiday/id6758526744?action=write-review"
+                    );
                   }}
                 />
                 <View className="mx-4" style={{ height: 1, backgroundColor: colors.divider }} />

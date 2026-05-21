@@ -3,6 +3,8 @@
 // Defines features, limits, and pricing with senior-friendly labels
 // ============================================================================
 
+import { Platform } from "react-native";
+
 export type FeatureTier = "essentials" | "premium";
 
 export interface FeatureConfig {
@@ -54,7 +56,7 @@ export const ESSENTIALS_FEATURES: FeatureConfig[] = [
 ];
 
 // Premium features
-// Note: Health features display data FROM Apple Health - the app does not collect health data directly
+// Note: Health features display data from Apple Health (iOS) or Health Connect (Android)
 export const PREMIUM_FEATURES: FeatureConfig[] = [
   {
     id: "medications-unlimited",
@@ -91,10 +93,14 @@ export const PREMIUM_FEATURES: FeatureConfig[] = [
   {
     id: "health-tracking",
     name: "Health Tracking",
-    description: "View steps, heart rate, and more from Apple Health",
+    description: Platform.OS === "android"
+      ? "View steps, heart rate, and more from Health Connect"
+      : "View steps, heart rate, and more from Apple Health",
     tier: "premium",
     icon: "fitness",
-    premiumTip: "View your health data synced from Apple Health.",
+    premiumTip: Platform.OS === "android"
+      ? "View your health data synced from Health Connect."
+      : "View your health data synced from Apple Health.",
   },
   {
     id: "food-water-tracking",

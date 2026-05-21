@@ -317,7 +317,7 @@ Respond with ONLY the JSON, no other text.`;
               className={`${textClasses.subtitle}`}
               style={{ color: colors.textPrimary }}
             >
-              {editingMedication ? "Edit Medication" : suggestionFromAppleHealth ? "Add from Apple Health" : "Add Medication"}
+              {editingMedication ? "Edit Medication" : suggestionFromAppleHealth ? (Platform.OS === "android" ? "Add from Health Connect" : "Add from Apple Health") : "Add Medication"}
             </Text>
             <Pressable
               onPress={handleSave}

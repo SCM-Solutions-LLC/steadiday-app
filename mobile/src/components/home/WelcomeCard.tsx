@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../utils/useTheme";
 import { useSettingsStore } from "../../state/stores/settingsStore";
@@ -79,7 +79,9 @@ export function WelcomeCard({ visible, onDismiss }: WelcomeCardProps) {
       iconColor: primary,
       iconBg: (colors.primaryLight || primary + "20"),
       title: "Health Tracking",
-      message: "Track your steps, heart rate, sleep, and more. If you have not already, you can connect Apple Health in Settings.",
+      message: Platform.OS === "android"
+        ? "Track your steps, heart rate, sleep, and more. Connect Health Connect in Settings to get started."
+        : "Track your steps, heart rate, sleep, and more. If you have not already, you can connect Apple Health in Settings.",
     },
     {
       icon: "shield-checkmark",

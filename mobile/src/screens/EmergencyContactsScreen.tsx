@@ -7,6 +7,7 @@ import { useAppStore } from "../state/appStore";
 import { Ionicons } from "@expo/vector-icons";
 import { EmergencyContact } from "../types/app";
 import { formatPhoneNumber } from "../utils/phoneFormatter";
+import { promptAndSendOptIn, promptAndSendOptInForMultiple } from "../utils/optInSms";
 import ContactImportModal from "../components/ContactImportModal";
 import { PhoneContact } from "../utils/contactImporter";
 import SwipeableRow from "../components/SwipeableRow";
@@ -143,12 +144,19 @@ export default function EmergencyContactsScreen() {
       }
 
       // Update existing contact
+      const phoneChanged = editingContact.phoneNumber !== phoneNumber.trim();
       updateEmergencyContact(editingContact.id, {
         name: name.trim(),
         relationship: relationship.trim() || "Contact",
         phoneNumber: phoneNumber.trim(),
+        ...(phoneChanged ? { optInSmsSent: false } : {}),
       });
       showSuccess("Contact updated!");
+
+      if (phoneChanged) {
+        const updatedContact = { ...editingContact, phoneNumber: phoneNumber.trim(), optInSmsSent: false };
+        promptAndSendOptIn(updatedContact);
+      }
     } else {
       // Check for duplicate phone number
       const isDuplicate = emergencyContacts.some(
@@ -166,11 +174,12 @@ export default function EmergencyContactsScreen() {
         name: name.trim(),
         relationship: relationship.trim() || "Contact",
         phoneNumber: phoneNumber.trim(),
-        isPrimary: emergencyContacts.length === 0, // First contact is primary
-        isEmergencyContact: true, // All contacts added here are emergency contacts
+        isPrimary: emergencyContacts.length === 0,
+        isEmergencyContact: true,
       };
       addEmergencyContact(newContact);
       showSuccess("Contact added!");
+      promptAndSendOptIn(newContact);
     }
 
     setShowModal(false);
@@ -213,14 +222,13 @@ export default function EmergencyContactsScreen() {
     }
   }, [performTwoWaySync, showSuccess, showError]);
 
-  const handleImportContacts = useCallback((contacts: Array<{ contact: PhoneContact; type: "emergency"; relationship?: string }>) => {
+  const handleImportContacts = useCallback(async (contacts: Array<{ contact: PhoneContact; type: "emergency"; relationship?: string }>) => {
     const currentEmergencyCount = emergencyContacts.length;
     let emergencyIndex = 0;
     let emergencyDuplicateCount = 0;
-    let addedCount = 0;
+    const importedContacts: EmergencyContact[] = [];
 
     contacts.forEach(({ contact, relationship: rel }) => {
-      // Check for duplicate phone number
       const isDuplicate = emergencyContacts.some(
         (c) => c.phoneNumber === contact.phoneNumber
       );
@@ -238,16 +246,16 @@ export default function EmergencyContactsScreen() {
           imageUri: contact.imageUri,
         };
         addEmergencyContact(newContact);
+        importedContacts.push(newContact);
         emergencyIndex++;
-        addedCount++;
       }
     });
 
     setShowImportModal(false);
 
-    // Show feedback
-    if (addedCount > 0) {
-      showSuccess(`${addedCount} contact${addedCount !== 1 ? "s" : ""} imported!`);
+    if (importedContacts.length > 0) {
+      showSuccess(`${importedContacts.length} contact${importedContacts.length !== 1 ? "s" : ""} imported!`);
+      await promptAndSendOptInForMultiple(importedContacts);
     }
     if (emergencyDuplicateCount > 0) {
       setTimeout(() => {

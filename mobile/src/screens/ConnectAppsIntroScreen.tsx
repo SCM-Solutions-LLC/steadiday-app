@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView, Platform } from "react-native";
 import { Screen } from "../components/Screen";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { OnboardingStackParamList } from "../navigation/RootNavigator";
@@ -20,6 +20,7 @@ export default function ConnectAppsIntroScreen({ navigation }: Props) {
   const textSize = useSettingsStore((s) => s.textSize);
   const textClasses = getTextSizeClasses(textSize);
   const { minTouchTarget } = useSlowMode();
+  const isAndroid = Platform.OS === "android";
 
   const handleConnectNow = () => {
     navigation.navigate("ConnectAppsChoice");
@@ -54,7 +55,7 @@ export default function ConnectAppsIntroScreen({ navigation }: Props) {
             className={`${textClasses.largeTitle} text-center mb-6`}
             style={{ color: colors.textPrimary }}
           >
-            Bring in your calendars?
+            {isAndroid ? "Connect your apps?" : "Bring in your calendars?"}
           </Text>
 
           {/* Description */}
@@ -62,21 +63,29 @@ export default function ConnectAppsIntroScreen({ navigation }: Props) {
             className={`${textClasses.subtitle} text-center leading-relaxed mb-8`}
             style={{ color: colors.textSecondary }}
           >
-            We can bring your existing info here so everything is in one place.
+            {isAndroid
+              ? "We can bring your health data and calendar events here so everything is in one place."
+              : "We can bring your existing info here so everything is in one place."}
           </Text>
         </View>
 
         {/* Integration options list */}
         <View className="rounded-2xl overflow-hidden mb-8" style={{ backgroundColor: colors.cardBackground }}>
-          {[
-            { icon: "heart" as const, label: "Apple Health", desc: "Steps, heart rate, sleep data", color: "#FF2D55" },
-            { icon: "calendar" as const, label: "Apple Calendar", desc: "Events and appointments", color: "#007AFF" },
-            { icon: "checkmark-circle" as const, label: "Apple Reminders", desc: "Tasks and to-dos", color: "#FF9500" },
-          ].map((item, index) => (
+          {(isAndroid
+            ? [
+                { icon: "fitness" as const, label: "Health Connect", desc: "Steps, heart rate, sleep data", color: "#4CAF50" },
+                { icon: "calendar" as const, label: "Google Calendar", desc: "Events and appointments", color: "#4285F4" },
+              ]
+            : [
+                { icon: "heart" as const, label: "Apple Health", desc: "Steps, heart rate, sleep data", color: "#FF2D55" },
+                { icon: "calendar" as const, label: "Apple Calendar", desc: "Events and appointments", color: "#007AFF" },
+                { icon: "checkmark-circle" as const, label: "Apple Reminders", desc: "Tasks and to-dos", color: "#FF9500" },
+              ]
+          ).map((item, index, arr) => (
             <View
               key={item.label}
               className="flex-row items-center px-5 py-4"
-              style={index < 2 ? { borderBottomWidth: 1, borderBottomColor: colors.divider } : undefined}
+              style={index < arr.length - 1 ? { borderBottomWidth: 1, borderBottomColor: colors.divider } : undefined}
             >
               <View
                 className="w-12 h-12 rounded-full items-center justify-center mr-4"

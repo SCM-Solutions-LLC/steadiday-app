@@ -59,9 +59,11 @@ export default function InlineTip({
   const markTipShown = useTipStore((s) => s.markTipShown);
   const dismissTip = useTipStore((s) => s.dismissTip);
 
-  // Also subscribe to seenTips to re-render when it changes
-  const seenTips = useTipStore((s) => s.seenTips);
-  const tipsCompleted = useTipStore((s) => s.tipsCompleted);
+  // Subscribe to reactive state so canShowTip re-evaluates on changes
+  useTipStore((s) => s.seenTips);
+  useTipStore((s) => s.tipShownThisSession);
+  useTipStore((s) => s.tipsCompleted);
+  useTipStore((s) => s.tipsEnabled);
 
   // Premium check
   const isPremiumUnlocked = useSubscriptionStore((s) => s.isPremiumUnlocked);
@@ -72,12 +74,9 @@ export default function InlineTip({
   const tipIcon = (icon || tipConfig?.icon || "information-circle") as keyof typeof Ionicons.glyphMap;
   const tipRequiresPremium = requiresPremium ?? tipConfig?.requiresPremium ?? false;
 
-  // Check if tip is in seenTips (already dismissed)
-  const isAlreadySeen = seenTips.includes(tipId);
-
-  // Determine if tip should show
+  // Determine if tip should show — canShowTip checks seenTips, tipShownThisSession, tipsCompleted, tipsEnabled
   const premiumCheck = !tipRequiresPremium || isPremiumUnlocked;
-  const shouldShow = !isDismissed && !isAlreadySeen && premiumCheck && !tipsCompleted;
+  const shouldShow = !isDismissed && canShowTip(tipId) && premiumCheck;
 
   // Track if we've already marked this tip as shown to avoid duplicate calls
   const hasMarkedShown = useRef(false);

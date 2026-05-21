@@ -74,10 +74,8 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
     return () => subscription.remove();
   }, [setAppleHealthConnected]);
 
-  // Filter integrations: show Apple Calendar, Apple Reminders, and Apple Health
   const visibleIntegrations = useMemo(() => {
     return integrations.filter((integration) => {
-      // When Android features are active, show Google Calendar on Android
       if (integration.id === "google-calendar" && !isAndroidFeaturesActive()) return false;
       return integration.platforms.includes(Platform.OS as "ios" | "android");
     });
@@ -259,7 +257,7 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
           {/* Compact Note */}
           <Text className="text-lg text-center mb-8 leading-relaxed" style={{ color: colors.textTertiary }}>
             {isAndroidFeaturesActive()
-              ? "SteadiDay supports Google Calendar."
+              ? "SteadiDay supports Health Connect and Google Calendar."
               : "SteadiDay supports Apple Calendar, Apple Reminders, and Apple Health."}
           </Text>
 
@@ -379,7 +377,9 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
               />
               <View className="flex-1 ml-3">
                 <Text className="text-base" style={{ color: colors.textSecondary }}>
-                  {"Pull down on the Tasks screen to refresh your calendar and reminders."}
+                  {Platform.OS === "android"
+                    ? "Pull down on the Tasks screen to refresh your calendar."
+                    : "Pull down on the Tasks screen to refresh your calendar and reminders."}
                 </Text>
               </View>
             </View>

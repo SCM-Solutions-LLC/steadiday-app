@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { OnboardingStackParamList } from "../navigation/RootNavigator";
 import { EmergencyContact } from "../types/app";
 import { formatPhoneNumber } from "../utils/phoneFormatter";
+import { promptAndSendOptInForMultiple } from "../utils/optInSms";
 import { Ionicons } from "@expo/vector-icons";
 import ContactImportModal from "../components/ContactImportModal";
 import { PhoneContact } from "../utils/contactImporter";
@@ -176,7 +177,7 @@ export default function EmergencyContactScreen({ navigation }: Props) {
     });
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     SessionManager.updateActivity();
     setAttemptedContinue(true);
 
@@ -216,14 +217,13 @@ export default function EmergencyContactScreen({ navigation }: Props) {
     setValidationError(null);
 
     // Save contacts to store
+    const newlyAdded: EmergencyContact[] = [];
     validRows.forEach((row) => {
-      // Check if this contact already exists in the store
       const existingContact = existingContacts.find(
         (c) => c.id === row.id || c.phoneNumber === row.phoneNumber
       );
 
       if (existingContact) {
-        // Update existing contact
         updateEmergencyContact(existingContact.id, {
           name: row.name.trim(),
           relationship: row.relationship.trim() || "Trusted Contact",
@@ -231,12 +231,10 @@ export default function EmergencyContactScreen({ navigation }: Props) {
           imageUri: row.imageUri,
         });
 
-        // Update primary status if needed
         if (row.isPrimary) {
           setPrimaryContact(existingContact.id);
         }
       } else {
-        // Add new contact
         const newContact: EmergencyContact = {
           id: row.id.startsWith("temp-") || row.id.startsWith("imported-")
             ? `contact-${Date.now()}-${Math.random().toString().substring(2)}`
@@ -249,6 +247,7 @@ export default function EmergencyContactScreen({ navigation }: Props) {
           imageUri: row.imageUri,
         };
         addEmergencyContact(newContact);
+        newlyAdded.push(newContact);
       }
     });
 
@@ -261,6 +260,11 @@ export default function EmergencyContactScreen({ navigation }: Props) {
       if (primaryInStore) {
         setPrimaryContact(primaryInStore.id);
       }
+    }
+
+    // Prompt to send opt-in texts before navigating
+    if (newlyAdded.length > 0) {
+      await promptAndSendOptInForMultiple(newlyAdded);
     }
 
     navigation.navigate("AllSet");

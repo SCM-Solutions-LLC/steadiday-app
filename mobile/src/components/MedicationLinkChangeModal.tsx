@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, Modal } from "react-native";
+import { View, Text, Pressable, Modal, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../utils/useTheme";
@@ -66,11 +66,14 @@ export default function MedicationLinkChangeModal({
     }
   };
 
+  // Note: Health Connect medication sync is not currently implemented on Android
+  const healthSource = Platform.OS === "android" ? "Health Connect" : "Apple Health";
+
   const getChangeDescription = () => {
     const medName = currentChange.userMedication.name;
     switch (currentChange.type) {
       case "removed":
-        return `"${medName}" is no longer in your Apple Health medication records. Would you like to remove it from your medications list?`;
+        return `"${medName}" is no longer in your ${healthSource} medication records. Would you like to remove it from your medications list?`;
       case "dosage_changed":
         return `The dosage for "${medName}" has changed from ${currentChange.oldValue} to ${currentChange.newValue}. Would you like to update your medication?`;
       case "name_changed":

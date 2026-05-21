@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { Task, TaskCategory, TaskFrequency, TaskRepeatEnding } from "../types/app";
 import { getTextSizeClasses } from "../utils/textSizes";
 import { useSettingsStore } from "../state/stores/settingsStore";
@@ -718,7 +718,36 @@ export default function AddTaskModal({
                 Starts
               </Text>
               <Pressable
-                onPress={() => setShowStartDatePicker(!showStartDatePicker)}
+                onPress={() => {
+                  if (Platform.OS === "android") {
+                    DateTimePickerAndroid.open({
+                      value: startDate,
+                      mode: "date",
+                      display: "default",
+                      onChange: (_event, selectedDate) => {
+                        if (_event.type === "dismissed") return;
+                        if (selectedDate) {
+                          setStartDate(selectedDate);
+                          setEndDate(selectedDate);
+                        }
+                        if (!isAllDay) {
+                          DateTimePickerAndroid.open({
+                            value: startTime,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_evt, selectedTime) => {
+                              if (_evt.type !== "dismissed" && selectedTime) {
+                                setStartTime(selectedTime);
+                              }
+                            },
+                          });
+                        }
+                      },
+                    });
+                  } else {
+                    setShowStartDatePicker(!showStartDatePicker);
+                  }
+                }}
                 className="px-6 py-4 rounded-xl mb-2 border"
                 style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}
               >
@@ -732,38 +761,22 @@ export default function AddTaskModal({
                   {!isAllDay && ` at ${formatTime(`${startTime.getHours().toString().padStart(2, "0")}:${startTime.getMinutes().toString().padStart(2, "0")}`)}`}
                 </Text>
               </Pressable>
-              {showStartDatePicker && (
+              {Platform.OS === "ios" && showStartDatePicker && (
                 <View className="mb-4 rounded-xl overflow-hidden border-2" style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}>
                   <DateTimePicker
                     value={startDate}
                     mode="date"
-                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    display="inline"
                     onChange={(event, selectedDate) => {
-                      if (Platform.OS === "android") {
-                        if (event.type === "dismissed") {
-                          setShowStartDatePicker(false);
-                          return;
-                        }
-                        if (selectedDate) {
-                          setStartDate(selectedDate);
-                          setEndDate(selectedDate);
-                        }
-                        if (!isAllDay) {
-                          setShowAndroidStartTimePicker(true);
-                        } else {
-                          setShowStartDatePicker(false);
-                        }
-                        return;
-                      }
                       if (selectedDate) {
                         setStartDate(selectedDate);
                         setEndDate(selectedDate);
                       }
                     }}
                     textColor={colors.textPrimary}
-                    {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                    themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                   />
-                  {!isAllDay && Platform.OS === "ios" && (
+                  {!isAllDay && (
                     <DateTimePicker
                       value={startTime}
                       mode="time"
@@ -775,32 +788,16 @@ export default function AddTaskModal({
                       themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                     />
                   )}
-                  {Platform.OS === "ios" && (
-                    <Pressable
-                      onPress={() => setShowStartDatePicker(false)}
-                      className="py-4"
-                      style={{ backgroundColor: primary }}
-                    >
-                      <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
-                        Done
-                      </Text>
-                    </Pressable>
-                  )}
+                  <Pressable
+                    onPress={() => setShowStartDatePicker(false)}
+                    className="py-4"
+                    style={{ backgroundColor: primary }}
+                  >
+                    <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
+                      Done
+                    </Text>
+                  </Pressable>
                 </View>
-              )}
-              {showAndroidStartTimePicker && Platform.OS === "android" && (
-                <DateTimePicker
-                  value={startTime}
-                  mode="time"
-                  display="default"
-                  onChange={(event, selectedTime) => {
-                    setShowAndroidStartTimePicker(false);
-                    setShowStartDatePicker(false);
-                    if (selectedTime && event.type !== "dismissed") {
-                      setStartTime(selectedTime);
-                    }
-                  }}
-                />
               )}
 
               {/* End Date/Time */}
@@ -808,7 +805,34 @@ export default function AddTaskModal({
                 Ends
               </Text>
               <Pressable
-                onPress={() => setShowEndDatePicker(!showEndDatePicker)}
+                onPress={() => {
+                  if (Platform.OS === "android") {
+                    DateTimePickerAndroid.open({
+                      value: endDate,
+                      mode: "date",
+                      display: "default",
+                      minimumDate: startDate,
+                      onChange: (_event, selectedDate) => {
+                        if (_event.type === "dismissed") return;
+                        if (selectedDate) setEndDate(selectedDate);
+                        if (!isAllDay) {
+                          DateTimePickerAndroid.open({
+                            value: endTime,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_evt, selectedTime) => {
+                              if (_evt.type !== "dismissed" && selectedTime) {
+                                setEndTime(selectedTime);
+                              }
+                            },
+                          });
+                        }
+                      },
+                    });
+                  } else {
+                    setShowEndDatePicker(!showEndDatePicker);
+                  }
+                }}
                 className="px-6 py-4 rounded-xl mb-6 border"
                 style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}
               >
@@ -822,33 +846,20 @@ export default function AddTaskModal({
                   {!isAllDay && ` at ${formatTime(`${endTime.getHours().toString().padStart(2, "0")}:${endTime.getMinutes().toString().padStart(2, "0")}`)}`}
                 </Text>
               </Pressable>
-              {showEndDatePicker && (
+              {Platform.OS === "ios" && showEndDatePicker && (
                 <View className="mb-6 rounded-xl overflow-hidden border-2" style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}>
                   <DateTimePicker
                     value={endDate}
                     mode="date"
-                    display={Platform.OS === "ios" ? "inline" : "default"}
+                    display="inline"
                     onChange={(event, selectedDate) => {
-                      if (Platform.OS === "android") {
-                        if (event.type === "dismissed") {
-                          setShowEndDatePicker(false);
-                          return;
-                        }
-                        if (selectedDate) setEndDate(selectedDate);
-                        if (!isAllDay) {
-                          setShowAndroidEndTimePicker(true);
-                        } else {
-                          setShowEndDatePicker(false);
-                        }
-                        return;
-                      }
                       if (selectedDate) setEndDate(selectedDate);
                     }}
                     minimumDate={startDate}
                     textColor={colors.textPrimary}
-                    {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                    themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                   />
-                  {!isAllDay && Platform.OS === "ios" && (
+                  {!isAllDay && (
                     <DateTimePicker
                       value={endTime}
                       mode="time"
@@ -860,32 +871,16 @@ export default function AddTaskModal({
                       themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                     />
                   )}
-                  {Platform.OS === "ios" && (
-                    <Pressable
-                      onPress={() => setShowEndDatePicker(false)}
-                      className="py-4"
-                      style={{ backgroundColor: primary }}
-                    >
-                      <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
-                        Done
-                      </Text>
-                    </Pressable>
-                  )}
+                  <Pressable
+                    onPress={() => setShowEndDatePicker(false)}
+                    className="py-4"
+                    style={{ backgroundColor: primary }}
+                  >
+                    <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
+                      Done
+                    </Text>
+                  </Pressable>
                 </View>
-              )}
-              {showAndroidEndTimePicker && Platform.OS === "android" && (
-                <DateTimePicker
-                  value={endTime}
-                  mode="time"
-                  display="default"
-                  onChange={(event, selectedTime) => {
-                    setShowAndroidEndTimePicker(false);
-                    setShowEndDatePicker(false);
-                    if (selectedTime && event.type !== "dismissed") {
-                      setEndTime(selectedTime);
-                    }
-                  }}
-                />
               )}
 
               {/* Repeat/Frequency - Now as a dropdown */}
@@ -980,7 +975,22 @@ export default function AddTaskModal({
                       Time 1
                     </Text>
                     <Pressable
-                      onPress={() => setShowStartDatePicker(!showStartDatePicker)}
+                      onPress={() => {
+                        if (Platform.OS === "android") {
+                          DateTimePickerAndroid.open({
+                            value: startTime,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_event, selectedTime) => {
+                              if (_event.type !== "dismissed" && selectedTime) {
+                                setStartTime(selectedTime);
+                              }
+                            },
+                          });
+                        } else {
+                          setShowStartDatePicker(!showStartDatePicker);
+                        }
+                      }}
                       className="px-4 py-2 rounded-lg"
                       style={{ backgroundColor: primaryLight }}
                     >
@@ -996,7 +1006,22 @@ export default function AddTaskModal({
                       Time 2
                     </Text>
                     <Pressable
-                      onPress={() => setShowTime2Picker(!showTime2Picker)}
+                      onPress={() => {
+                        if (Platform.OS === "android") {
+                          DateTimePickerAndroid.open({
+                            value: time2,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_event, selectedTime) => {
+                              if (_event.type !== "dismissed" && selectedTime) {
+                                setTime2(selectedTime);
+                              }
+                            },
+                          });
+                        } else {
+                          setShowTime2Picker(!showTime2Picker);
+                        }
+                      }}
                       className="px-4 py-2 rounded-lg"
                       style={{ backgroundColor: primaryLight }}
                     >
@@ -1005,34 +1030,29 @@ export default function AddTaskModal({
                       </Text>
                     </Pressable>
                   </View>
-                  {showTime2Picker && (
+                  {Platform.OS === "ios" && showTime2Picker && (
                     <View className="mb-4 rounded-xl overflow-hidden border-2" style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}>
                       <DateTimePicker
                         value={time2}
                         mode="time"
-                        display={Platform.OS === "ios" ? "spinner" : "default"}
+                        display="spinner"
                         onChange={(event, selectedTime) => {
-                          if (Platform.OS === "android") {
-                            setShowTime2Picker(false);
-                          }
                           if (selectedTime && event.type !== "dismissed") {
                             setTime2(selectedTime);
                           }
                         }}
                         textColor={colors.textPrimary}
-                        {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                        themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                       />
-                      {Platform.OS === "ios" && (
-                        <Pressable
-                          onPress={() => setShowTime2Picker(false)}
-                          className="py-4"
-                          style={{ backgroundColor: primary }}
-                        >
-                          <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
-                            Done
-                          </Text>
-                        </Pressable>
-                      )}
+                      <Pressable
+                        onPress={() => setShowTime2Picker(false)}
+                        className="py-4"
+                        style={{ backgroundColor: primary }}
+                      >
+                        <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
+                          Done
+                        </Text>
+                      </Pressable>
                     </View>
                   )}
 
@@ -1044,7 +1064,22 @@ export default function AddTaskModal({
                           Time 3
                         </Text>
                         <Pressable
-                          onPress={() => setShowTime3Picker(!showTime3Picker)}
+                          onPress={() => {
+                            if (Platform.OS === "android") {
+                              DateTimePickerAndroid.open({
+                                value: time3,
+                                mode: "time",
+                                display: "default",
+                                onChange: (_event, selectedTime) => {
+                                  if (_event.type !== "dismissed" && selectedTime) {
+                                    setTime3(selectedTime);
+                                  }
+                                },
+                              });
+                            } else {
+                              setShowTime3Picker(!showTime3Picker);
+                            }
+                          }}
                           className="px-4 py-2 rounded-lg"
                           style={{ backgroundColor: primaryLight }}
                         >
@@ -1053,34 +1088,29 @@ export default function AddTaskModal({
                           </Text>
                         </Pressable>
                       </View>
-                      {showTime3Picker && (
+                      {Platform.OS === "ios" && showTime3Picker && (
                         <View className="mb-4 rounded-xl overflow-hidden border-2" style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}>
                           <DateTimePicker
                             value={time3}
                             mode="time"
-                            display={Platform.OS === "ios" ? "spinner" : "default"}
+                            display="spinner"
                             onChange={(event, selectedTime) => {
-                              if (Platform.OS === "android") {
-                                setShowTime3Picker(false);
-                              }
                               if (selectedTime && event.type !== "dismissed") {
                                 setTime3(selectedTime);
                               }
                             }}
                             textColor={colors.textPrimary}
-                            {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                            themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                           />
-                          {Platform.OS === "ios" && (
-                            <Pressable
-                              onPress={() => setShowTime3Picker(false)}
-                              className="py-4"
-                              style={{ backgroundColor: primary }}
-                            >
-                              <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
-                                Done
-                              </Text>
-                            </Pressable>
-                          )}
+                          <Pressable
+                            onPress={() => setShowTime3Picker(false)}
+                            className="py-4"
+                            style={{ backgroundColor: primary }}
+                          >
+                            <Text className={`${textClasses.body} text-center font-semibold`} style={{ color: onPrimary }}>
+                              Done
+                            </Text>
+                          </Pressable>
                         </View>
                       )}
                     </>
@@ -1143,44 +1173,55 @@ export default function AddTaskModal({
                     )}
                   </Pressable>
 
-                  {repeatEnding === "on-date" && showRepeatEndDatePicker && (
+                  {Platform.OS === "ios" && repeatEnding === "on-date" && showRepeatEndDatePicker && (
                     <View className="mb-4 rounded-xl overflow-hidden border-2" style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}>
                       <DateTimePicker
                         value={repeatEndDate}
                         mode="date"
-                        display={Platform.OS === "ios" ? "inline" : "default"}
+                        display="inline"
                         onChange={(event, selectedDate) => {
-                          if (Platform.OS === "android") {
-                            setShowRepeatEndDatePicker(false);
-                          }
                           if (selectedDate && event.type !== "dismissed") {
                             setRepeatEndDate(selectedDate);
                           }
                         }}
                         minimumDate={startDate}
                         textColor={colors.textPrimary}
-                        {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                        themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                       />
-                      {Platform.OS === "ios" && (
-                        <Pressable
-                          onPress={() => setShowRepeatEndDatePicker(false)}
-                          className="py-4"
-                          style={{ backgroundColor: primary }}
+                      <Pressable
+                        onPress={() => setShowRepeatEndDatePicker(false)}
+                        className="py-4"
+                        style={{ backgroundColor: primary }}
+                      >
+                        <Text
+                          className={`${textClasses.body} text-center font-semibold`}
+                          style={{ color: onPrimary }}
                         >
-                          <Text
-                            className={`${textClasses.body} text-center font-semibold`}
-                            style={{ color: onPrimary }}
-                          >
-                            Done
-                          </Text>
-                        </Pressable>
-                      )}
+                          Done
+                        </Text>
+                      </Pressable>
                     </View>
                   )}
 
                   {repeatEnding === "on-date" && (
                     <Pressable
-                      onPress={() => setShowRepeatEndDatePicker(!showRepeatEndDatePicker)}
+                      onPress={() => {
+                        if (Platform.OS === "android") {
+                          DateTimePickerAndroid.open({
+                            value: repeatEndDate,
+                            mode: "date",
+                            display: "default",
+                            minimumDate: startDate,
+                            onChange: (_event, selectedDate) => {
+                              if (_event.type !== "dismissed" && selectedDate) {
+                                setRepeatEndDate(selectedDate);
+                              }
+                            },
+                          });
+                        } else {
+                          setShowRepeatEndDatePicker(!showRepeatEndDatePicker);
+                        }
+                      }}
                       className="px-6 py-3 mb-2 rounded-xl border"
                       style={{ backgroundColor: primaryLight, borderColor: primary }}
                     >

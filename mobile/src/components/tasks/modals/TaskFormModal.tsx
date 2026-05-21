@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { formatTime } from "../../../utils/time";
 import { TaskCategory, TaskFrequency, AlertTiming, SecondAlertTiming } from "../../../types/app";
@@ -631,7 +631,22 @@ export function TaskFormModal({
                   Date
                 </Text>
                 <Pressable
-                  onPress={() => setShowDatePicker(!showDatePicker)}
+                  onPress={() => {
+                    if (Platform.OS === "android") {
+                      DateTimePickerAndroid.open({
+                        value: date,
+                        mode: "date",
+                        display: "default",
+                        onChange: (_event, selectedDate) => {
+                          if (_event.type !== "dismissed" && selectedDate) {
+                            setDate(selectedDate);
+                          }
+                        },
+                      });
+                    } else {
+                      setShowDatePicker(!showDatePicker);
+                    }
+                  }}
                   className="px-6 py-4 rounded-xl mb-4 border"
                   style={{ backgroundColor: primaryLight, borderColor: primary, minHeight: 48 }}
                   accessibilityRole="button"
@@ -645,7 +660,7 @@ export function TaskFormModal({
                   </View>
                 </Pressable>
 
-                {showDatePicker && (
+                {Platform.OS === "ios" && showDatePicker && (
                   <View
                     className="rounded-xl p-4 mb-6 border-2"
                     style={{ backgroundColor: colors.cardBackground, borderColor: colors.border }}
@@ -654,17 +669,14 @@ export function TaskFormModal({
                       <DateTimePicker
                         value={date}
                         mode="date"
-                        display={Platform.OS === "ios" ? "inline" : "default"}
+                        display="inline"
                         onChange={(event, selectedDate) => {
-                          if (Platform.OS === "android") {
-                            setShowDatePicker(false);
-                          }
                           if (selectedDate && event.type !== "dismissed") {
                             setDate(selectedDate);
                           }
                         }}
                         textColor={colors.textPrimary}
-                        {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                        themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                       />
                     </View>
                   </View>
@@ -708,7 +720,16 @@ export function TaskFormModal({
                     <Pressable
                       onPress={() => {
                         if (Platform.OS === "android") {
-                          setShowAndroidTimePicker(true);
+                          DateTimePickerAndroid.open({
+                            value: time,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_event, selectedTime) => {
+                              if (_event.type !== "dismissed" && selectedTime) {
+                                setTime(selectedTime);
+                              }
+                            },
+                          });
                         }
                       }}
                     >
@@ -724,22 +745,19 @@ export function TaskFormModal({
                         )}
                       </Text>
                     </Pressable>
-                    {(Platform.OS === "ios" || showAndroidTimePicker) && (
+                    {Platform.OS === "ios" && (
                       <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.cardBackground }}>
                         <DateTimePicker
                           value={time}
                           mode="time"
-                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          display="spinner"
                           onChange={(event, selectedTime) => {
-                            if (Platform.OS === "android") {
-                              setShowAndroidTimePicker(false);
-                            }
                             if (selectedTime && event.type !== "dismissed") {
                               setTime(selectedTime);
                             }
                           }}
                           textColor={colors.textPrimary}
-                          {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                          themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                         />
                       </View>
                     )}
@@ -762,7 +780,22 @@ export function TaskFormModal({
                       Second time
                     </Text>
                     <Pressable
-                      onPress={() => setShowTime2Picker(!showTime2Picker)}
+                      onPress={() => {
+                        if (Platform.OS === "android") {
+                          DateTimePickerAndroid.open({
+                            value: time2,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_event, selectedTime) => {
+                              if (_event.type !== "dismissed" && selectedTime) {
+                                setTime2(selectedTime);
+                              }
+                            },
+                          });
+                        } else {
+                          setShowTime2Picker(!showTime2Picker);
+                        }
+                      }}
                       className="py-3 px-4 rounded-xl mb-2"
                       style={{ backgroundColor: colors.cardBackground }}
                     >
@@ -773,22 +806,19 @@ export function TaskFormModal({
                         {formatTime(formatTimeForStorage(time2))}
                       </Text>
                     </Pressable>
-                    {showTime2Picker && (
+                    {Platform.OS === "ios" && showTime2Picker && (
                       <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.cardBackground }}>
                         <DateTimePicker
                           value={time2}
                           mode="time"
-                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          display="spinner"
                           onChange={(event, selectedTime) => {
-                            if (Platform.OS === "android") {
-                              setShowTime2Picker(false);
-                            }
                             if (selectedTime && event.type !== "dismissed") {
                               setTime2(selectedTime);
                             }
                           }}
                           textColor={colors.textPrimary}
-                          {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                          themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                         />
                       </View>
                     )}
@@ -808,7 +838,22 @@ export function TaskFormModal({
                       Third time
                     </Text>
                     <Pressable
-                      onPress={() => setShowTime3Picker(!showTime3Picker)}
+                      onPress={() => {
+                        if (Platform.OS === "android") {
+                          DateTimePickerAndroid.open({
+                            value: time3,
+                            mode: "time",
+                            display: "default",
+                            onChange: (_event, selectedTime) => {
+                              if (_event.type !== "dismissed" && selectedTime) {
+                                setTime3(selectedTime);
+                              }
+                            },
+                          });
+                        } else {
+                          setShowTime3Picker(!showTime3Picker);
+                        }
+                      }}
                       className="py-3 px-4 rounded-xl mb-2"
                       style={{ backgroundColor: colors.cardBackground }}
                     >
@@ -819,22 +864,19 @@ export function TaskFormModal({
                         {formatTime(formatTimeForStorage(time3))}
                       </Text>
                     </Pressable>
-                    {showTime3Picker && (
+                    {Platform.OS === "ios" && showTime3Picker && (
                       <View className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.cardBackground }}>
                         <DateTimePicker
                           value={time3}
                           mode="time"
-                          display={Platform.OS === "ios" ? "spinner" : "default"}
+                          display="spinner"
                           onChange={(event, selectedTime) => {
-                            if (Platform.OS === "android") {
-                              setShowTime3Picker(false);
-                            }
                             if (selectedTime && event.type !== "dismissed") {
                               setTime3(selectedTime);
                             }
                           }}
                           textColor={colors.textPrimary}
-                          {...(Platform.OS === "ios" && { themeVariant: colors.cardBackground === "#FFFFFF" ? "light" : "dark" })}
+                          themeVariant={colors.cardBackground === "#FFFFFF" ? "light" : "dark"}
                         />
                       </View>
                     )}

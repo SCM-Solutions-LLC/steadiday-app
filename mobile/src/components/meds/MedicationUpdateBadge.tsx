@@ -1,11 +1,12 @@
 /**
- * MedicationUpdateBadge - Shows when a linked medication has updates from Apple Health
+ * MedicationUpdateBadge - Shows when a linked medication has updates from a health provider
  *
  * Theme-aware badge that uses semantic color tokens for proper contrast
  * in light, dark, and accessibility modes. Meets WCAG AA contrast minimum (4.5:1).
+ * Note: Health Connect medication sync is not currently implemented on Android
  */
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../utils/useTheme";
 import { MedicationChange } from "../../hooks/useMedicationLinkSync";
@@ -33,18 +34,20 @@ export default function MedicationUpdateBadge({ change, onPress, compact = false
     }
   };
 
+  const healthSource = Platform.OS === "android" ? "Health Connect" : "Apple Health";
+
   // Get detailed accessibility label for screen readers
   const getAccessibilityLabel = (): string => {
     const description = getChangeDescription();
     switch (change.type) {
       case "dosage_changed":
-        return `${description}. Tap to review dosage changes from Apple Health.`;
+        return `${description}. Tap to review dosage changes from ${healthSource}.`;
       case "name_changed":
-        return `${description}. Tap to review medication name change from Apple Health.`;
+        return `${description}. Tap to review medication name change from ${healthSource}.`;
       case "removed":
         return `${description}. This medication was removed from your health provider records. Tap to review.`;
       default:
-        return `${description}. Tap to review changes from Apple Health.`;
+        return `${description}. Tap to review changes from ${healthSource}.`;
     }
   };
 

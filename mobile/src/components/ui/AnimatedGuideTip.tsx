@@ -52,11 +52,15 @@ export default function AnimatedGuideTip({
   const textSize = useSettingsStore((s) => s.textSize);
   const hapticEnabled = useSettingsStore((s) => s.soundSettings?.hapticFeedbackEnabled) ?? true;
 
-  // Tip store - use primitive selector to avoid re-renders
-  const hasBeenSeen = useTipStore((s) => s.seenTips.includes(tipId));
+  // Tip store
+  const canShowTip = useTipStore((s) => s.canShowTip);
   const dismissTip = useTipStore((s) => s.dismissTip);
-  const tipsEnabled = useTipStore((s) => s.tipsEnabled);
-  const tipsCompleted = useTipStore((s) => s.tipsCompleted);
+
+  // Subscribe to reactive state so canShowTip re-evaluates on changes
+  useTipStore((s) => s.seenTips);
+  useTipStore((s) => s.tipShownThisSession);
+  useTipStore((s) => s.tipsCompleted);
+  useTipStore((s) => s.tipsEnabled);
 
   // Local visibility state
   const [isVisible, setIsVisible] = useState(false);
@@ -69,7 +73,7 @@ export default function AnimatedGuideTip({
 
   // Show tip on mount if not seen
   useEffect(() => {
-    if (tipsEnabled && !hasBeenSeen && !tipsCompleted) {
+    if (canShowTip(tipId)) {
       setIsVisible(true);
 
       fadeAnim.value = withTiming(1, { duration: 400 });

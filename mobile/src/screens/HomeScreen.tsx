@@ -86,7 +86,6 @@ export default function HomeScreen() {
   const getTodaysCalories = useHealthStore((s) => s.getTodaysCalories);
   const getTodaysFoodEntries = useHealthStore((s) => s.getTodaysFoodEntries);
   const getTodaysWater = useHealthStore((s) => s.getTodaysWater);
-  const hasInitialHealthSync = useHealthStore((s) => s.hasInitialHealthSync);
 
   // Tip state from useTipStore
   const dismissedInfoCards = useTipStore((s) => s.dismissedInfoCards || []);
@@ -797,32 +796,6 @@ export default function HomeScreen() {
               setShowWelcome(false);
             }}
           />
-        )}
-
-        {/* Health tab nudge — first run only, auto-hides after sync */}
-        {!hasInitialHealthSync && !isCardDismissed("home-health-nudge") && (
-          <View
-            style={{ backgroundColor: colors.infoBackground, borderColor: colors.info, borderWidth: 1 }}
-            className="rounded-2xl p-4 mb-6 flex-row items-start"
-            accessibilityRole="text"
-            accessibilityLabel="View your health data in the Health tab."
-          >
-            <Ionicons name="heart-outline" size={22} color={colors.info} style={{ marginRight: 12, marginTop: 2 }} />
-            <View className="flex-1">
-              <Text className={`${textClasses.body} leading-relaxed`} style={{ color: colors.textPrimary }}>
-                {"Check the Health tab to see your steps, heart rate, and sleep. Connect Apple Health in Settings to get started."}
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => dismissInfoCard("home-health-nudge")}
-              className="p-1 active:opacity-50 ml-2"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="Dismiss health tip"
-            >
-              <Ionicons name="close" size={20} color={colors.info} />
-            </Pressable>
-          </View>
         )}
 
         {/* Care View Entry Point - Premium only, shows when enabled in settings */}

@@ -1,0 +1,24 @@
+# Environment and secret files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
+
+# Firebase config files (contain project identifiers)
+GoogleService-Info.plist
+google-services.json
+
+# EAS local credentials
+mobile/eas.json
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db

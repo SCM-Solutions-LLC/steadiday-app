@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { View, Text, ScrollView, Platform, ActivityIndicator, Alert, Linking, AppState } from "react-native";
+import { View, Text, ScrollView, Platform, ActivityIndicator, Linking, AppState } from "react-native";
 import { Screen } from "../components/Screen";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { OnboardingStackParamList } from "../navigation/RootNavigator";
@@ -13,12 +13,13 @@ import { appleRemindersService } from "../sync/appleRemindersSync";
 import {
   requestHealthPermissions,
   checkHealthConnectAvailability,
-  openHealthConnectPlayStore,
 } from "../utils/healthSync";
-import { logger } from "../utils/logger";
 import { isAndroidFeaturesActive } from "../config/platformConfig";
+import { logger } from "../utils/logger";
+import { googleCalendarService, isGoogleCalendarConfigured } from "../sync/googleCalendarSync";
 import Button from "../components/Button";
 import CustomSwitch from "../components/CustomSwitch";
+import HealthConnectPermissionModal, { type HealthConnectModalVariant } from "../components/HealthConnectPermissionModal";
 import { BackButton } from "../components/ui";
 
 type Props = {
@@ -43,6 +44,10 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
   const setAppleCalendarPermission = useIntegrationsStore((s) => s.setAppleCalendarPermission);
   const setAppleRemindersPermission = useIntegrationsStore((s) => s.setAppleRemindersPermission);
 
+  // Google Calendar state
+  const setGoogleCalendarConnected = useIntegrationsStore((s) => s.setGoogleCalendarConnected);
+  const disconnectGoogleCalendar = useIntegrationsStore((s) => s.disconnectGoogleCalendar);
+
   // Apple Health specific state
   const appleHealthConnected = useSubscriptionStore((s) => s.appleHealthConnected);
   const setAppleHealthConnected = useSubscriptionStore((s) => s.setAppleHealthConnected);
@@ -53,7 +58,11 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
   // Loading state for sync
   const [syncingId, setSyncingId] = useState<string | null>(null);
 
-  // Retry Apple Health after returning from Settings
+  // Health Connect permission modal state (Android)
+  const [hcModalVisible, setHcModalVisible] = useState(false);
+  const [hcModalVariant, setHcModalVariant] = useState<HealthConnectModalVariant>("permissions-required");
+
+  // Retry Apple Health after returning from Settings (iOS)
   const [pendingHealthRetry, setPendingHealthRetry] = useState(false);
   const pendingHealthRetryRef = useRef(false);
 
@@ -76,7 +85,7 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
 
   const visibleIntegrations = useMemo(() => {
     return integrations.filter((integration) => {
-      if (integration.id === "google-calendar" && !isAndroidFeaturesActive()) return false;
+      if (integration.id === "google-calendar" && !isGoogleCalendarConfigured()) return false;
       return integration.platforms.includes(Platform.OS as "ios" | "android");
     });
   }, [integrations]);
@@ -119,32 +128,49 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
           } else {
             setAppleRemindersPermission("denied");
           }
+        } else if (id === "google-calendar") {
+          const result = await googleCalendarService.connect();
+          if (result.success) {
+            setGoogleCalendarConnected(true, result.email);
+            setSyncingId(null);
+            setPermissionPromptOpen(false);
+            return;
+          }
         } else if (id === "apple-health") {
+          // Android: check availability and show modal dialogs
           if (Platform.OS === "android") {
+            if (!isAndroidFeaturesActive()) {
+              setHcModalVariant("sandbox");
+              setHcModalVisible(true);
+              setSyncingId(null);
+              setPermissionPromptOpen(false);
+              return;
+            }
+
             const availability = await checkHealthConnectAvailability();
             if (availability === "not_installed") {
-              Alert.alert(
-                "Health Connect Required",
-                "Health Connect is not installed on your device. Would you like to install it from the Play Store?",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Install", onPress: () => openHealthConnectPlayStore() },
-                ]
-              );
+              setHcModalVariant("not-installed");
+              setHcModalVisible(true);
               setSyncingId(null);
               setPermissionPromptOpen(false);
               return;
             }
             if (availability === "not_supported") {
-              Alert.alert(
-                "Health Connect Not Supported",
-                "Health Connect requires Android 9 or later. Your device may not support this feature.",
-                [{ text: "OK" }]
-              );
+              setHcModalVariant("not-supported");
+              setHcModalVisible(true);
               setSyncingId(null);
               setPermissionPromptOpen(false);
               return;
             }
+          }
+
+          // Web/sandbox fallback
+          if (Platform.OS === "web") {
+            setHcModalVariant("sandbox");
+            setHcModalVisible(true);
+            setSyncingId(null);
+            setPermissionPromptOpen(false);
+            return;
           }
 
           const granted = await requestHealthPermissions();
@@ -156,20 +182,11 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
           }
 
           if (Platform.OS === "ios") {
-            Alert.alert(
-              "Health Permission Needed",
-              "SteadiDay needs access to Apple Health to track your steps, heart rate, sleep, and more. You can enable this in your iPhone Settings.",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Open Settings", onPress: () => { Linking.openURL("app-settings:"); setPendingHealthRetry(true); } },
-              ]
-            );
+            Linking.openURL("app-settings:");
+            setPendingHealthRetry(true);
           } else {
-            Alert.alert(
-              "Health Connect Permission Needed",
-              "SteadiDay needs access to Health Connect to track your steps, heart rate, sleep, and more. Please grant permissions in Health Connect settings.",
-              [{ text: "OK" }]
-            );
+            setHcModalVariant("permissions-required");
+            setHcModalVisible(true);
           }
         }
       } catch (error) {
@@ -184,11 +201,14 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
         setAppleCalendarConnected(false);
       } else if (id === "apple-reminders") {
         setAppleRemindersConnected(false);
+      } else if (id === "google-calendar") {
+        await googleCalendarService.disconnect();
+        disconnectGoogleCalendar();
       } else if (id === "apple-health") {
         setAppleHealthConnected(false);
       }
     }
-  }, [setAppleCalendarConnected, setAppleRemindersConnected, setAppleCalendarPermission, setAppleRemindersPermission, setAppleHealthConnected, navigation, canStartPermissionPrompt, setPermissionPromptOpen]);
+  }, [setAppleCalendarConnected, setAppleRemindersConnected, setAppleCalendarPermission, setAppleRemindersPermission, setGoogleCalendarConnected, disconnectGoogleCalendar, setAppleHealthConnected, navigation, canStartPermissionPrompt, setPermissionPromptOpen]);
 
   // Get status label text
   const getStatusLabel = (integrationId: string, isConnected: boolean, isSyncing: boolean) => {
@@ -210,6 +230,12 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
   const getStatusColor = (isConnected: boolean) => {
     return isConnected ? colors.success : colors.textTertiary;
   };
+
+  // Called when Health Connect permissions are granted via the modal's AppState listener
+  const handleHealthConnectPermissionsGranted = useCallback(() => {
+    setHcModalVisible(false);
+    setAppleHealthConnected(true);
+  }, [setAppleHealthConnected]);
 
   const handleContinue = useCallback(async () => {
     if (
@@ -256,7 +282,7 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
 
           {/* Compact Note */}
           <Text className="text-lg text-center mb-8 leading-relaxed" style={{ color: colors.textTertiary }}>
-            {isAndroidFeaturesActive()
+            {isGoogleCalendarConfigured()
               ? "SteadiDay supports Health Connect and Google Calendar."
               : "SteadiDay supports Apple Calendar, Apple Reminders, and Apple Health."}
           </Text>
@@ -407,6 +433,14 @@ export default function ConnectAppsChoiceScreen({ navigation }: Props) {
           </View>
         </View>
       </ScrollView>
+
+      {/* Health Connect Permission Modal (Android) */}
+      <HealthConnectPermissionModal
+        visible={hcModalVisible}
+        variant={hcModalVariant}
+        onClose={() => setHcModalVisible(false)}
+        onPermissionsGranted={handleHealthConnectPermissionsGranted}
+      />
     </Screen>
   );
 }

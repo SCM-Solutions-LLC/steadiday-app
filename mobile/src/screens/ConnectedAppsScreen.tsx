@@ -9,13 +9,15 @@ import { useIntegrationsStore } from "../state/stores/integrationsStore";
 import { useSubscriptionStore } from "../state/stores/subscriptionStore";
 import { appleCalendarService } from "../sync/appleCalendarSync";
 import { appleRemindersService } from "../sync/appleRemindersSync";
-import { requestHealthPermissions, syncHealthData } from "../utils/healthSync";
+import { requestHealthPermissions, syncHealthData, checkHealthConnectAvailability } from "../utils/healthSync";
 import { useHealthStore } from "../state/stores/healthStore";
 import { syncHealthRecordsOnConnect } from "../utils/healthRecordsSyncHelper";
+import { googleCalendarService, isGoogleCalendarConfigured } from "../sync/googleCalendarSync";
+import { isAndroidFeaturesActive } from "../config/platformConfig";
 import { logger } from "../utils/logger";
 import CustomSwitch from "../components/CustomSwitch";
+import HealthConnectPermissionModal, { type HealthConnectModalVariant } from "../components/HealthConnectPermissionModal";
 import { RootStackParamList } from "../navigation/RootNavigator";
-import { isAndroidFeaturesActive } from "../config/platformConfig";
 
 type HealthFailureKind = "permissions-denied" | "sync-failed";
 
@@ -38,6 +40,11 @@ export default function ConnectedAppsScreen() {
   const setAppleRemindersConnected = useIntegrationsStore((s) => s.setAppleRemindersConnected);
   const setAppleRemindersPermission = useIntegrationsStore((s) => s.setAppleRemindersPermission);
 
+  // Google Calendar state
+  const googleCalendarEmail = useIntegrationsStore((s) => s.googleCalendarEmail);
+  const setGoogleCalendarConnected = useIntegrationsStore((s) => s.setGoogleCalendarConnected);
+  const disconnectGoogleCalendar = useIntegrationsStore((s) => s.disconnectGoogleCalendar);
+
   // Apple Health specific state
   const appleHealthConnected = useSubscriptionStore((s) => s.appleHealthConnected);
   const setAppleHealthConnected = useSubscriptionStore((s) => s.setAppleHealthConnected);
@@ -48,9 +55,13 @@ export default function ConnectedAppsScreen() {
   // Apple Health connection failure state (drives retry/helper UI)
   const [healthFailure, setHealthFailure] = useState<HealthFailureKind | null>(null);
 
+  // Health Connect permission modal state (Android only)
+  const [hcModalVisible, setHcModalVisible] = useState(false);
+  const [hcModalVariant, setHcModalVariant] = useState<HealthConnectModalVariant>("permissions-required");
+
   const visibleIntegrations = useMemo(() => {
     return integrations.filter((integration) => {
-      if (integration.id === "google-calendar" && !isAndroidFeaturesActive()) return false;
+      if (integration.id === "google-calendar" && !isGoogleCalendarConfigured()) return false;
       return integration.platforms.includes(Platform.OS as "ios" | "android");
     });
   }, [integrations]);
@@ -84,11 +95,56 @@ export default function ConnectedAppsScreen() {
           } else {
             setAppleRemindersPermission("denied");
           }
+        } else if (id === "google-calendar") {
+          const result = await googleCalendarService.connect();
+          if (result.success) {
+            setGoogleCalendarConnected(true, result.email);
+            setConnectingId(null);
+            return;
+          }
         } else if (id === "apple-health") {
           setHealthFailure(null);
+
+          // Android: check availability and show modal dialogs instead of system alerts
+          if (Platform.OS === "android") {
+            if (!isAndroidFeaturesActive()) {
+              setHcModalVariant("sandbox");
+              setHcModalVisible(true);
+              setConnectingId(null);
+              return;
+            }
+
+            const availability = await checkHealthConnectAvailability();
+            if (availability === "not_installed") {
+              setHcModalVariant("not-installed");
+              setHcModalVisible(true);
+              setConnectingId(null);
+              return;
+            }
+            if (availability === "not_supported") {
+              setHcModalVariant("not-supported");
+              setHcModalVisible(true);
+              setConnectingId(null);
+              return;
+            }
+          }
+
+          // Web/sandbox fallback for non-native environments
+          if (Platform.OS === "web") {
+            setHcModalVariant("sandbox");
+            setHcModalVisible(true);
+            setConnectingId(null);
+            return;
+          }
+
           const permissionGranted = await requestHealthPermissions();
           if (!permissionGranted) {
-            setHealthFailure("permissions-denied");
+            if (Platform.OS === "android") {
+              setHcModalVariant("permissions-required");
+              setHcModalVisible(true);
+            } else {
+              setHealthFailure("permissions-denied");
+            }
             setAppleHealthConnected(false);
             setConnectingId(null);
             return;
@@ -110,7 +166,6 @@ export default function ConnectedAppsScreen() {
 
           if (syncSucceeded) {
             setAppleHealthConnected(true);
-            // Trigger health records sync (medications from clinical records) - iOS only
             if (Platform.OS === "ios") {
               try {
                 const result = await syncHealthRecordsOnConnect();
@@ -139,12 +194,43 @@ export default function ConnectedAppsScreen() {
         setAppleCalendarConnected(false);
       } else if (id === "apple-reminders") {
         setAppleRemindersConnected(false);
+      } else if (id === "google-calendar") {
+        await googleCalendarService.disconnect();
+        disconnectGoogleCalendar();
       } else if (id === "apple-health") {
         setAppleHealthConnected(false);
         setHealthFailure(null);
       }
     }
-  }, [navigation, setAppleCalendarConnected, setAppleCalendarPermission, setAppleRemindersConnected, setAppleRemindersPermission, setAppleHealthConnected]);
+  }, [navigation, setAppleCalendarConnected, setAppleCalendarPermission, setAppleRemindersConnected, setAppleRemindersPermission, setGoogleCalendarConnected, disconnectGoogleCalendar, setAppleHealthConnected]);
+
+  // Called when Health Connect permissions are granted via the modal's AppState listener
+  const handleHealthConnectPermissionsGranted = useCallback(async () => {
+    setHcModalVisible(false);
+    setConnectingId("apple-health");
+    setHealthFailure(null);
+
+    let syncSucceeded = false;
+    try {
+      const healthStore = useHealthStore.getState();
+      const isInitial = !healthStore.hasInitialHealthSync;
+      syncSucceeded = await syncHealthData(healthStore.addHealthMetric, isInitial);
+      if (syncSucceeded && isInitial) {
+        healthStore.setHasInitialHealthSync(true);
+      }
+    } catch (error) {
+      logger.error("Error syncing health data after HC permission grant:", error);
+      syncSucceeded = false;
+    }
+
+    if (syncSucceeded) {
+      setAppleHealthConnected(true);
+    } else {
+      setAppleHealthConnected(false);
+      setHealthFailure("sync-failed");
+    }
+    setConnectingId(null);
+  }, [setAppleHealthConnected]);
 
   // Retry a failed Apple Health connection (re-runs permission + sync)
   const handleRetryAppleHealth = useCallback(async () => {
@@ -175,6 +261,9 @@ export default function ConnectedAppsScreen() {
     if (integrationId === "apple-reminders") {
       const count = appleReminders.selectedListIds.length;
       return count > 0 ? `${count} list${count !== 1 ? "s" : ""} selected` : "Connected - Select lists";
+    }
+    if (integrationId === "google-calendar" && googleCalendarEmail) {
+      return googleCalendarEmail;
     }
 
     return "Connected";
@@ -378,6 +467,14 @@ export default function ConnectedAppsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Health Connect Permission Modal (Android) */}
+      <HealthConnectPermissionModal
+        visible={hcModalVisible}
+        variant={hcModalVariant}
+        onClose={() => setHcModalVisible(false)}
+        onPermissionsGranted={handleHealthConnectPermissionsGranted}
+      />
     </Screen>
   );
 }

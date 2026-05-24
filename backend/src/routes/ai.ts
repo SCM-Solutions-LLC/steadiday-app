@@ -7,6 +7,9 @@ const aiRouter = new Hono();
 // Timeout constant
 const AI_TIMEOUT_MS = 60000;
 
+// Centralized model for image analysis — use a low-cost vision model
+const IMAGE_ANALYSIS_MODEL = "gpt-4o-mini";
+
 // =============================================================================
 // ZOD VALIDATION SCHEMAS
 // =============================================================================
@@ -24,8 +27,8 @@ const messageSchema = z.object({
 const openaiChatSchema = z.object({
   messages: z.array(messageSchema).nonempty("Messages array cannot be empty"),
   model: z
-    .enum(["gpt-4o", "gpt-4o-mini", "gpt-4.1-2025-04-14", "o4-mini-2025-04-16", "gpt-4o-2024-11-20"])
-    .default("gpt-4o"),
+    .enum(["gpt-4o-mini", "gpt-4.1-mini"])
+    .default("gpt-4o-mini"),
   temperature: z.number().min(0).max(2).default(0.7),
   maxTokens: z.number().max(4096).default(2048),
 });
@@ -40,7 +43,7 @@ const grokChatSchema = z.object({
 });
 
 const imageAnalyzeSchema = z.object({
-  base64Image: z.string().max(10_000_000, "Image too large (max ~10MB base64)"),
+  base64Image: z.string().max(7_000_000, "Image too large (max ~5MB)"),
   prompt: z.string().min(1, "Prompt is required").max(2000, "Prompt too long (max 2000 chars)"),
   timeoutMs: z.number().min(5000).max(60000).default(30000),
 });
@@ -54,28 +57,28 @@ const transcribeLanguageSchema = z.string().length(2, "Language must be a 2-lett
 
 // Simple API key authentication for all AI routes
 aiRouter.use("*", async (c, next) => {
+  const expectedKey = process.env.APP_CLIENT_KEY;
+  if (!expectedKey) {
+    return c.json({ error: "AI service not available" }, 503);
+  }
   const clientKey = c.req.header("X-App-Key");
-  if (clientKey !== process.env.APP_CLIENT_KEY) {
+  if (clientKey !== expectedKey) {
     return c.json({ error: "Unauthorized" }, 401);
   }
   await next();
 });
 
-// Initialize OpenAI client (for OpenAI endpoints)
-const getOpenAIClient = () => {
+// Initialize OpenAI client — returns null when the key is not configured
+const getOpenAIClient = (): OpenAI | null => {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OpenAI API key not configured");
-  }
+  if (!apiKey) return null;
   return new OpenAI({ apiKey });
 };
 
-// Initialize Grok client (uses OpenAI SDK with different base URL)
-const getGrokClient = () => {
+// Initialize Grok client — returns null when the key is not configured
+const getGrokClient = (): OpenAI | null => {
   const apiKey = process.env.GROK_API_KEY;
-  if (!apiKey) {
-    throw new Error("Grok API key not configured");
-  }
+  if (!apiKey) return null;
   return new OpenAI({
     apiKey,
     baseURL: "https://api.x.ai/v1",
@@ -97,6 +100,9 @@ aiRouter.post("/chat", async (c) => {
 
     const { messages, model, temperature, maxTokens } = parsed.data;
     const client = getOpenAIClient();
+    if (!client) {
+      return c.json({ error: "AI service not available" }, 503);
+    }
 
     // Create abort controller for timeout
     const controller = new AbortController();
@@ -131,7 +137,7 @@ aiRouter.post("/chat", async (c) => {
       throw error;
     }
   } catch (error) {
-    console.error("OpenAI chat error:", error);
+    console.error(JSON.stringify({ timestamp: new Date().toISOString(), route: "/api/ai/chat", status: 500, error: error instanceof Error ? error.name : "unknown" }));
     return c.json({ error: "AI request failed" }, 500);
   }
 });
@@ -151,6 +157,9 @@ aiRouter.post("/chat/grok", async (c) => {
 
     const { messages, model, temperature, maxTokens } = parsed.data;
     const client = getGrokClient();
+    if (!client) {
+      return c.json({ error: "AI service not available" }, 503);
+    }
 
     // Create abort controller for timeout
     const controller = new AbortController();
@@ -185,13 +194,13 @@ aiRouter.post("/chat/grok", async (c) => {
       throw error;
     }
   } catch (error) {
-    console.error("Grok chat error:", error);
+    console.error(JSON.stringify({ timestamp: new Date().toISOString(), route: "/api/ai/chat/grok", status: 500, error: error instanceof Error ? error.name : "unknown" }));
     return c.json({ error: "AI request failed" }, 500);
   }
 });
 
 /**
- * POST /image/analyze - Analyze image with OpenAI GPT-4o vision
+ * POST /image/analyze - Analyze image with OpenAI vision
  * Accepts: { base64Image, prompt, timeoutMs? }
  */
 aiRouter.post("/image/analyze", async (c) => {
@@ -205,6 +214,9 @@ aiRouter.post("/image/analyze", async (c) => {
 
     const { base64Image, prompt, timeoutMs } = parsed.data;
     const client = getOpenAIClient();
+    if (!client) {
+      return c.json({ error: "AI service not available" }, 503);
+    }
 
     // Create abort controller for timeout
     const controller = new AbortController();
@@ -213,7 +225,7 @@ aiRouter.post("/image/analyze", async (c) => {
     try {
       const response = await client.chat.completions.create(
         {
-          model: "gpt-4o",
+          model: IMAGE_ANALYSIS_MODEL,
           messages: [
             {
               role: "user",
@@ -246,7 +258,7 @@ aiRouter.post("/image/analyze", async (c) => {
       throw error;
     }
   } catch (error) {
-    console.error("Image analysis error:", error);
+    console.error(JSON.stringify({ timestamp: new Date().toISOString(), route: "/api/ai/image/analyze", status: 500, error: error instanceof Error ? error.name : "unknown" }));
     return c.json({ error: "Image analysis failed" }, 500);
   }
 });
@@ -283,7 +295,7 @@ aiRouter.post("/audio/transcribe", async (c) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return c.json({ error: "AI service not configured" }, 500);
+      return c.json({ error: "AI service not available" }, 503);
     }
 
     // Forward to OpenAI transcription API
@@ -308,7 +320,7 @@ aiRouter.post("/audio/transcribe", async (c) => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error("Transcription API error:", response.status);
+        console.error(JSON.stringify({ timestamp: new Date().toISOString(), route: "/api/ai/audio/transcribe", status: response.status, error: "upstream_error" }));
         return c.json({ error: "Transcription failed" }, 500);
       }
 
@@ -322,7 +334,7 @@ aiRouter.post("/audio/transcribe", async (c) => {
       throw error;
     }
   } catch (error) {
-    console.error("Transcription error:", error);
+    console.error(JSON.stringify({ timestamp: new Date().toISOString(), route: "/api/ai/audio/transcribe", status: 500, error: error instanceof Error ? error.name : "unknown" }));
     return c.json({ error: "Transcription failed" }, 500);
   }
 });

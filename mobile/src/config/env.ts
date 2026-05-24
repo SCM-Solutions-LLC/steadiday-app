@@ -37,23 +37,24 @@ import { logger } from "../utils/logger";
  */
 const ENVIRONMENTS = {
   development: {
-    apiBaseUrl: process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL
-      || process.env.EXPO_PUBLIC_BACKEND_URL
+    apiBaseUrl: process.env.EXPO_PUBLIC_BACKEND_URL
+      || process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL
       || "http://localhost:3000",
     enableLogging: true,
     enableDebugTools: true,
     name: "development" as const,
   },
   staging: {
-    apiBaseUrl: "https://staging-api.steadiday.com",
+    apiBaseUrl: process.env.EXPO_PUBLIC_BACKEND_URL
+      || "https://staging-api.steadiday.com",
     enableLogging: true,
     enableDebugTools: false,
     name: "staging" as const,
   },
   production: {
-    apiBaseUrl: process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL
-      || process.env.EXPO_PUBLIC_BACKEND_URL
-      || "https://achiness-moneyless.vibecode.run",
+    apiBaseUrl: process.env.EXPO_PUBLIC_BACKEND_URL
+      || process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL
+      || "https://api.steadiday.com",
     enableLogging: false,
     enableDebugTools: false,
     name: "production" as const,

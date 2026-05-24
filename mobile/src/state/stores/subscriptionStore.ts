@@ -478,6 +478,12 @@ export const useSubscriptionStore = create<SubscriptionStore>()(
           if (!state.featureVisibility)
             state.featureVisibility = DEFAULT_SIMPLE_VISIBILITY;
 
+          // v1.0: Core features must always be visible regardless of persisted state
+          state.featureVisibility.sections.home = true;
+          state.featureVisibility.sections.tasks = true;
+          state.featureVisibility.homeCards.sos = true;
+          state.featureVisibility.homeCards.tasks = true;
+
           // Check if premium state needs re-verification (stale after 24 hours)
           if (state.isPremiumUnlocked && state.lastVerifiedAt) {
             const lastVerified = new Date(state.lastVerifiedAt).getTime();

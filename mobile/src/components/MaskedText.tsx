@@ -31,6 +31,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../utils/useTheme";
 
 interface MaskedTextProps {
   /** The sensitive value to display/mask */
@@ -63,6 +64,7 @@ export default function MaskedText({
   inCard = false,
 }: MaskedTextProps) {
   const [isMasked, setIsMasked] = useState(maskByDefault);
+  const { colors, primary } = useTheme();
 
   // Generate masked version (show same length as actual value)
   const maskedValue = maskChar.repeat(Math.min(value.length, 12));
@@ -76,16 +78,20 @@ export default function MaskedText({
     <View className={inCard ? "" : "mb-4"}>
       {/* Label */}
       {label && (
-        <Text className="text-sm font-semibold text-light-body mb-1">
+        <Text className="text-sm font-semibold mb-1" style={{ color: colors.textSecondary }}>
           {label}
         </Text>
       )}
 
       {/* Value with show/hide button */}
-      <View className="flex-row items-center justify-between bg-[#F7F7F7] rounded-xl px-4 py-3 border border-[#DDDDDD]">
+      <View
+        className="flex-row items-center justify-between rounded-xl px-4 py-3"
+        style={{ backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border }}
+      >
         {/* The actual or masked value */}
         <Text
-          className={`${textSize} text-light-heading flex-1 mr-3`}
+          className={`${textSize} flex-1 mr-3`}
+          style={{ color: colors.textPrimary }}
           numberOfLines={1}
         >
           {isMasked ? maskedValue : value}
@@ -95,7 +101,7 @@ export default function MaskedText({
         {/* SECURITY: Large tap target for seniors */}
         <Pressable
           onPress={() => setIsMasked(!isMasked)}
-          className="p-2 rounded-lg active:bg-[#DDDDDD]"
+          className="p-2 rounded-lg active:opacity-70"
           accessibilityRole="button"
           accessibilityLabel={
             isMasked ? `Show ${label || "value"}` : `Hide ${label || "value"}`
@@ -106,14 +112,14 @@ export default function MaskedText({
           <Ionicons
             name={isMasked ? "eye-outline" : "eye-off-outline"}
             size={24}
-            color="#2F80ED"
+            color={primary}
           />
         </Pressable>
       </View>
 
       {/* Helper text */}
       {maskByDefault && (
-        <Text className="text-xs text-light-body mt-1 ml-1">
+        <Text className="text-xs mt-1 ml-1" style={{ color: colors.textSecondary }}>
           Tap the eye icon to {isMasked ? "show" : "hide"}
         </Text>
       )}

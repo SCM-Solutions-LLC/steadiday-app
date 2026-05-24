@@ -69,6 +69,7 @@ export async function migrateFromLegacyStore(): Promise<boolean> {
       logger.log("[Migration] Already completed, skipping");
       // Still check for app store key migration (old -> new branding)
       await migrateAppStoreKey();
+      await migratePhoneNumbers();
       return false;
     }
 
@@ -279,6 +280,9 @@ export async function migrateFromLegacyStore(): Promise<boolean> {
       logger.log("[Migration] UI state migrated");
     }
 
+    // Run phone normalization on freshly migrated data too
+    await migratePhoneNumbers();
+
     // Mark migration complete
     await AsyncStorage.setItem(MIGRATION_COMPLETE_KEY, "true");
     logger.log("[Migration] Complete! User data preserved.");
@@ -288,6 +292,49 @@ export async function migrateFromLegacyStore(): Promise<boolean> {
     logger.error("[Migration] Error:", error);
     // Don't mark as complete if there was an error - will retry next launch
     return false;
+  }
+}
+
+const PHONE_NORMALIZE_KEY = "phone-normalize-v1-complete";
+
+function normalizeUSPhone(raw: string): string {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    digits = digits.slice(1);
+  }
+  return digits;
+}
+
+export async function migratePhoneNumbers(): Promise<void> {
+  try {
+    const done = await AsyncStorage.getItem(PHONE_NORMALIZE_KEY);
+    if (done === "true") return;
+
+    const userRaw = await AsyncStorage.getItem(STORE_KEYS.user);
+    if (userRaw) {
+      const userData = JSON.parse(userRaw);
+      const contacts = userData?.state?.userProfile?.emergencyContacts;
+      if (Array.isArray(contacts) && contacts.length > 0) {
+        let changed = false;
+        for (const contact of contacts) {
+          if (typeof contact.phoneNumber === "string") {
+            const normalized = normalizeUSPhone(contact.phoneNumber);
+            if (normalized !== contact.phoneNumber) {
+              contact.phoneNumber = normalized;
+              changed = true;
+            }
+          }
+        }
+        if (changed) {
+          await AsyncStorage.setItem(STORE_KEYS.user, JSON.stringify(userData));
+          logger.log("[Migration] Normalized emergency contact phone numbers");
+        }
+      }
+    }
+
+    await AsyncStorage.setItem(PHONE_NORMALIZE_KEY, "true");
+  } catch (error) {
+    logger.error("[Migration] Phone normalization error:", error);
   }
 }
 

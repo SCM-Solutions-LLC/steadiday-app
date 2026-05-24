@@ -581,8 +581,10 @@ export default function MultipleTasksScreen({ navigation }: Props) {
             className="flex-1 px-6 py-6"
             showsVerticalScrollIndicator={true}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
             nestedScrollEnabled={true}
             removeClippedSubviews={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
           >
             {/* Back Button */}
             <BackButton label="Back" style={{ marginBottom: 12 }} />
@@ -842,16 +844,18 @@ export default function MultipleTasksScreen({ navigation }: Props) {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Add/Edit Task Modal */}
-      <AddTaskModal
-        visible={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingTask(null);
-        }}
-        onSave={handleSaveTask}
-        editingTask={editingTask}
-      />
+      {/* Add/Edit Task Modal - conditionally mounted to avoid responder chain issues */}
+      {showAddModal && (
+        <AddTaskModal
+          visible={showAddModal}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingTask(null);
+          }}
+          onSave={handleSaveTask}
+          editingTask={editingTask}
+        />
+      )}
     </Screen>
   );
 }

@@ -239,7 +239,7 @@ export function PhotoImportSection({
             paddingVertical: 16,
             paddingHorizontal: 24,
             borderWidth: 2,
-            borderColor: colors.success,
+            borderColor: primary,
             minHeight: 64,
             justifyContent: "center",
           }}
@@ -247,10 +247,10 @@ export function PhotoImportSection({
           accessibilityLabel="Import Photo from gallery"
         >
           <View className="flex-row items-center justify-center mb-1">
-            <Ionicons name="images" size={28} color={colors.success} />
+            <Ionicons name="images" size={28} color={primary} />
             <Text
               className={`${textClasses.body} font-bold ml-2`}
-              style={{ color: colors.success }}
+              style={{ color: primary }}
             >
               Import Photo
             </Text>

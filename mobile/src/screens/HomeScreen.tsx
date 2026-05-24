@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { View, Text, Pressable, Linking, Platform, UIManager, AccessibilityInfo, Image, Alert } from "react-native";
+import { View, Text, Pressable, Linking, Platform, UIManager, AccessibilityInfo, Image, Alert, AppState } from "react-native";
 import { Screen } from "../components/Screen";
 import { useUserStore } from "../state/stores/userStore";
 import { useTaskStore } from "../state/stores/taskStore";
@@ -12,6 +12,7 @@ import { useSafetySessionStore } from "../state/stores/safetySessionStore";
 import { useTipStore, TIP_IDS } from "../state/stores/tipStore";
 import { Ionicons } from "@expo/vector-icons";
 import { getGreeting, formatDate } from "../utils/time";
+import { toE164PhoneNumber } from "../utils/phoneFormatter";
 import { getTextSizeClasses } from "../utils/textSizes";
 import { useNavigation } from "@react-navigation/native";
 import * as Location from "expo-location";
@@ -49,8 +50,10 @@ import {
 import SafetySessionCard from "../components/home/SafetySessionCard";
 import BackupReminderBanner from "../components/home/BackupReminderBanner";
 import { useSessionLifecycle } from "../components/safety/useSessionLifecycle";
+import { addNativeFallDetectedListener, acknowledgeFallAlert, consumePendingFallAlert } from "../utils/backgroundWorkout";
 import { logger } from "../utils/logger";
 import { config } from "../config/env";
+import { APP_CLIENT_KEY } from "../api/constants";
 import { isAndroidFeaturesActive } from "../config/platformConfig";
 import UserProfileSurvey from "./UserProfileSurvey";
 import {
@@ -143,6 +146,7 @@ export default function HomeScreen() {
   const [fallEmergencyResults, setFallEmergencyResults] = useState<{ name: string; status: "sent" | "failed" }[]>([]);
   const [fallEmergencySuccess, setFallEmergencySuccess] = useState(false);
   const [fallEmergencyCoords, setFallEmergencyCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [fallEmergencyFailReason, setFallEmergencyFailReason] = useState<string | undefined>();
 
   const hasHydratedTips = useTipStore((s) => s._hasHydrated);
 
@@ -203,12 +207,51 @@ export default function HomeScreen() {
   // Session lifecycle (background notifications)
   useSessionLifecycle();
 
-  const { showFallAlert, fallCountdown, cancelFallAlert, triggerFallAlert } = useFallDetection({
+  const { showFallAlert, fallCountdown, cancelFallAlert, triggerFallAlert, triggerExternalFallAlert } = useFallDetection({
     enabled: isSessionActive,
     onFallDetected: async () => {
       await handleFallNoResponse();
     },
   });
+
+  // Subscribe to native fall detection events (works in background)
+  useEffect(() => {
+    if (!isSessionActive) return;
+    const unsubscribe = addNativeFallDetectedListener(() => {
+      triggerExternalFallAlert();
+    });
+    return unsubscribe;
+  }, [isSessionActive, triggerExternalFallAlert]);
+
+  // Check for pending native fall alert on mount and when app resumes from background.
+  // Covers: cold start from notification tap, background resume, screen unlock.
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    const checkPendingFall = async () => {
+      const ts = await consumePendingFallAlert();
+      if (ts > 0) {
+        triggerExternalFallAlert();
+      }
+    };
+
+    checkPendingFall();
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        checkPendingFall();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isSessionActive, triggerExternalFallAlert]);
+
+  const handleCancelFallAlert = useCallback(() => {
+    cancelFallAlert();
+    acknowledgeFallAlert();
+    // Cancel server-backed escalation
+    useSafetySessionStore.getState().cancelFallEscalation();
+  }, [cancelFallAlert]);
 
   const { movingWidgetIndex, moveWidgetUp, moveWidgetDown } = useWidgetReorder({
     widgets: homeScreenWidgets,
@@ -353,7 +396,7 @@ export default function HomeScreen() {
           const location = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
           });
-          locationText = `\u{1F4CD} GPS Location: https://maps.apple.com/?q=${location.coords.latitude},${location.coords.longitude}`;
+          locationText = `\u{1F4CD} Location:\nhttps://maps.apple.com/?q=${location.coords.latitude},${location.coords.longitude}\nhttps://maps.google.com/?q=${location.coords.latitude},${location.coords.longitude}`;
         } catch (e) {
           locationText = userLocation
             ? `\u{1F4CD} Approximate area: ${userLocation}`
@@ -375,7 +418,7 @@ export default function HomeScreen() {
 
       const smsResult = await SMS.sendSMSAsync(
         allPhoneNumbers,
-        `\u{1F198} EMERGENCY ALERT\n\nThis is ${userName}'s SteadiDay app.\n\n${userName} pressed the SOS button and needs help immediately.\n\n${locationText}\n\nPlease call or check on them right away.`
+        `\u{1F198} SteadiDay Emergency Alert\n\n${userName} needs help immediately.\n\n${locationText}\n\nPlease call or check on them right away.`
       );
 
       setSosTextSending(false);
@@ -395,25 +438,31 @@ export default function HomeScreen() {
     }
   };
 
-  const sendFallEmergencySMS = async (latitude: number, longitude: number): Promise<{ ok: boolean; results: { name: string; status: "sent" | "failed" }[] }> => {
+  const sendFallEmergencySMS = async (latitude: number, longitude: number): Promise<{ ok: boolean; results: { name: string; status: "sent" | "failed" }[]; failReason?: string }> => {
     const emergencyMarkedContacts = emergencyContacts.filter((c) => c.isEmergencyContact);
     if (emergencyMarkedContacts.length === 0) {
-      return { ok: false, results: [] };
+      return { ok: false, results: [], failReason: "no_valid_contacts" };
     }
 
-    const contacts = emergencyMarkedContacts.map((c) => ({
-      name: c.name,
-      phone: c.phoneNumber.startsWith("+") ? c.phoneNumber : `+1${c.phoneNumber.replace(/[^0-9]/g, "")}`,
-    }));
+    const contacts = emergencyMarkedContacts
+      .map((c) => ({ name: c.name, phone: toE164PhoneNumber(c.phoneNumber) }))
+      .filter((c): c is { name: string; phone: string } => c.phone !== null);
+
+    if (contacts.length === 0) {
+      return { ok: false, results: [], failReason: "no_valid_contacts" };
+    }
 
     const MAX_RETRIES = 2;
+    let lastReason = "unknown";
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
         const response = await fetch(`${config.apiBaseUrl}/api/emergency/sms`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-App-Key": APP_CLIENT_KEY,
+          },
           body: JSON.stringify({
-            apiSecret: process.env.EXPO_PUBLIC_EMERGENCY_API_SECRET,
             userName: userName || "A SteadiDay user",
             contacts,
             latitude,
@@ -424,15 +473,17 @@ export default function HomeScreen() {
         if (data.success === true) {
           return { ok: true, results: data.contacts || [] };
         }
-        console.error(`[EmergencySMS] Attempt ${attempt + 1} failed: server returned success=false`, JSON.stringify(data));
+        lastReason = data.reason || (response.status === 400 ? "invalid_request" : response.status === 401 ? "auth_failed" : response.status === 503 ? "app_key_not_configured" : "server_error");
+        logger.error(`[EmergencySMS] Attempt ${attempt + 1} failed (${response.status}): ${lastReason}`);
       } catch (e) {
-        console.error(`[EmergencySMS] Attempt ${attempt + 1} network error:`, e);
+        lastReason = "network_error";
+        logger.error(`[EmergencySMS] Attempt ${attempt + 1} network error:`, e);
       }
       if (attempt < MAX_RETRIES) {
         await new Promise((r) => setTimeout(r, 1500));
       }
     }
-    return { ok: false, results: contacts.map((c) => ({ name: c.name, status: "failed" as const })) };
+    return { ok: false, results: contacts.map((c) => ({ name: c.name, status: "failed" as const })), failReason: lastReason };
   };
 
   const handleFallNoResponse = async () => {
@@ -441,6 +492,7 @@ export default function HomeScreen() {
       if (emergencyMarkedContacts.length === 0) {
         setFallEmergencyResults([]);
         setFallEmergencySuccess(false);
+        setFallEmergencyFailReason("no_valid_contacts");
         setFallEmergencyCoords(null);
         setShowFallEmergency(true);
         return;
@@ -461,13 +513,15 @@ export default function HomeScreen() {
 
       setFallEmergencyCoords({ latitude, longitude });
 
-      const { ok, results } = await sendFallEmergencySMS(latitude, longitude);
+      const { ok, results, failReason } = await sendFallEmergencySMS(latitude, longitude);
       setFallEmergencyResults(results);
       setFallEmergencySuccess(ok);
+      setFallEmergencyFailReason(failReason);
     } catch (e) {
       logger.error("Error in fall no-response handler:", e);
       setFallEmergencyResults([]);
       setFallEmergencySuccess(false);
+      setFallEmergencyFailReason("network_error");
     }
 
     setShowFallEmergency(true);
@@ -475,9 +529,10 @@ export default function HomeScreen() {
 
   const handleRetryFallEmergency = async () => {
     if (!fallEmergencyCoords) return;
-    const { ok, results } = await sendFallEmergencySMS(fallEmergencyCoords.latitude, fallEmergencyCoords.longitude);
+    const { ok, results, failReason } = await sendFallEmergencySMS(fallEmergencyCoords.latitude, fallEmergencyCoords.longitude);
     setFallEmergencyResults(results);
     setFallEmergencySuccess(ok);
+    setFallEmergencyFailReason(failReason);
   };
 
   // Location handlers
@@ -939,7 +994,7 @@ export default function HomeScreen() {
       <FallAlertModal
         visible={showFallAlert}
         countdown={fallCountdown}
-        onCancel={trackActivity(cancelFallAlert)}
+        onCancel={trackActivity(handleCancelFallAlert)}
         onCallNow={trackActivity(triggerFallAlert)}
         textClasses={textClasses}
         colors={colors}
@@ -950,6 +1005,7 @@ export default function HomeScreen() {
         visible={showFallEmergency}
         contactResults={fallEmergencyResults}
         backendSuccess={fallEmergencySuccess}
+        failReason={fallEmergencyFailReason}
         contacts={emergencyContacts.filter((c) => c.isEmergencyContact)}
         userName={userName}
         latitude={fallEmergencyCoords?.latitude}

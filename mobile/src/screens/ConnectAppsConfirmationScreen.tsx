@@ -37,8 +37,8 @@ export default function ConnectAppsConfirmationScreen({ navigation, route }: Pro
     <Screen variant="static" edges={["top", "bottom"]}>
       <View className="flex-1 px-10 py-12 justify-between">
         <View className="flex-1 justify-center items-center">
-          <View className="rounded-full p-10 mb-10" style={{ backgroundColor: "#E5F4EF" }}>
-            <Ionicons name="checkmark-circle" size={88} color="#6DB193" />
+          <View className="rounded-full p-10 mb-10" style={{ backgroundColor: colors.successBackground }}>
+            <Ionicons name="checkmark-circle" size={88} color={colors.success} />
           </View>
 
           <Text className="text-4xl font-semibold text-center mb-8 leading-tight" style={{ color: colors.textPrimary }}>

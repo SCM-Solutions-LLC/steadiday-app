@@ -1,8 +1,11 @@
 import * as Notifications from "expo-notifications";
 import { Platform, AppState } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Medication, Task, NotificationSource, AlertTiming, SecondAlertTiming, Language } from "../types/app";
 import { speak } from "./speech";
 import { logger } from "./logger";
+
+const MIND_BREAKS_NOTIFICATION_ID_KEY = "mindBreaksNotificationId";
 import { useMedicationStore } from "../state/stores/medicationStore";
 import { useTaskStore } from "../state/stores/taskStore";
 
@@ -245,7 +248,7 @@ export async function scheduleMedicationNotification(
               screen: "Meds",
               action: "view",
             },
-            sound: "default",
+            sound: Platform.OS === "ios" ? "default" : undefined,
             priority: Notifications.AndroidNotificationPriority.HIGH,
             categoryIdentifier: "medication",
           },
@@ -300,7 +303,7 @@ export async function scheduleMedicationNotification(
               screen: "Meds",
               action: "view",
             },
-            sound: "default",
+            sound: Platform.OS === "ios" ? "default" : undefined,
             priority: Notifications.AndroidNotificationPriority.HIGH,
             categoryIdentifier: "medication",
           },
@@ -402,7 +405,7 @@ export async function scheduleTaskNotification(
             screen: "Tasks",
             action: "view",
           },
-          sound: "default",
+          sound: Platform.OS === "ios" ? "default" : undefined,
           priority: Notifications.AndroidNotificationPriority.HIGH,
           categoryIdentifier: "task",
         },
@@ -451,7 +454,7 @@ export async function scheduleTaskNotification(
               screen: "Tasks",
               action: "view",
             },
-            sound: "default",
+            sound: Platform.OS === "ios" ? "default" : undefined,
             priority: Notifications.AndroidNotificationPriority.HIGH,
             categoryIdentifier: "task",
           },
@@ -619,7 +622,7 @@ export async function snoozeNotification(
         title: genericTitle,
         body: genericBody,
         data: notificationDataWithDeepLink,
-        sound: "default",
+        sound: Platform.OS === "ios" ? "default" : undefined,
         priority: Notifications.AndroidNotificationPriority.HIGH,
         categoryIdentifier: notificationData.type,
       },
@@ -724,7 +727,7 @@ export async function scheduleWaterReminders(reminderTimes?: string[]): Promise<
             screen: "WaterTracker",
             action: "view",
           },
-          sound: "default",
+          sound: Platform.OS === "ios" ? "default" : undefined,
           priority: Notifications.AndroidNotificationPriority.DEFAULT,
         },
         trigger: Platform.OS === "android"
@@ -865,19 +868,19 @@ export async function scheduleMindBreaksReminder(
         Math.floor(Math.random() * STREAK_REMINDER_MESSAGES.length)
       ];
 
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Mind Breaks Reminder",
-        body: message,
-        data: {
-          type: "mindbreaks",
-          screen: "MindBreaks",
-          action: "view",
-        },
-        sound: "default",
-        priority: Notifications.AndroidNotificationPriority.DEFAULT,
+    const notificationContent: Notifications.NotificationContentInput = {
+      title: "Mind Breaks Reminder",
+      body: message,
+      data: {
+        type: "mindbreaks",
+        screen: "MindBreaks",
+        action: "view",
       },
-      trigger: Platform.OS === "android"
+      ...(Platform.OS === "ios" && { sound: "default" }),
+    };
+
+    const notificationTrigger: Notifications.NotificationTriggerInput =
+      Platform.OS === "android"
         ? {
             type: Notifications.SchedulableTriggerInputTypes.DAILY,
             hour: hour,
@@ -889,10 +892,31 @@ export async function scheduleMindBreaksReminder(
             hour: hour,
             minute: minute,
             repeats: true,
-            channelId: undefined,
-          },
-    });
+          };
 
+    let notificationId: string;
+    try {
+      notificationId = await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
+        trigger: notificationTrigger,
+      });
+    } catch (scheduleError) {
+      if (Platform.OS === "android") {
+        // Stale serialized notifications in SharedPreferences can cause
+        // ClassCastException during scheduling. Clear all stored notification
+        // data and retry once.
+        logger.log("[Notifications] Clearing stale Android notification data and retrying");
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        notificationId = await Notifications.scheduleNotificationAsync({
+          content: notificationContent,
+          trigger: notificationTrigger,
+        });
+      } else {
+        throw scheduleError;
+      }
+    }
+
+    await AsyncStorage.setItem(MIND_BREAKS_NOTIFICATION_ID_KEY, notificationId);
     logger.log(
       `[Notifications] Scheduled Mind Breaks reminder at ${reminderTime}`
     );
@@ -911,18 +935,11 @@ export async function scheduleMindBreaksReminder(
  */
 export async function cancelMindBreaksReminder(): Promise<void> {
   try {
-    const allScheduled =
-      await Notifications.getAllScheduledNotificationsAsync();
-
-    for (const notification of allScheduled) {
-      const data = notification.content.data as { type?: string } | undefined;
-      if (data?.type === "mindbreaks") {
-        await Notifications.cancelScheduledNotificationAsync(
-          notification.identifier
-        );
-      }
+    const storedId = await AsyncStorage.getItem(MIND_BREAKS_NOTIFICATION_ID_KEY);
+    if (storedId) {
+      await Notifications.cancelScheduledNotificationAsync(storedId);
+      await AsyncStorage.removeItem(MIND_BREAKS_NOTIFICATION_ID_KEY);
     }
-
     logger.log("[Notifications] Cancelled Mind Breaks reminder");
   } catch (error) {
     logger.error(

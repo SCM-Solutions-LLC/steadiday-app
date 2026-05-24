@@ -16,8 +16,17 @@ import { useTaskStore } from "../state/stores/taskStore";
 import { useUserStore } from "../state/stores/userStore";
 import type { Medication, Task, TrustedContact } from "../types/app";
 
-// Demo PIN for App Store reviewers
+// Demo PIN for local testing only — gated behind __DEV__ at every call site
 export const DEMO_PIN = "0000";
+
+/**
+ * Returns true only in development builds when pin matches the demo PIN.
+ * Production builds always return false — no bypass is possible.
+ */
+export function isDemoPin(pin: string): boolean {
+  if (!__DEV__) return false;
+  return pin === DEMO_PIN;
+}
 
 const DEMO_MODE_KEY = "steadiday_demo_mode_active";
 
@@ -40,6 +49,9 @@ export async function isDemoModeActive(): Promise<boolean> {
  * This allows App Store reviewers to test the subscription purchase flow.
  */
 export async function activateDemoMode(): Promise<void> {
+  // Defense-in-depth: demo mode only works in development builds
+  if (!__DEV__) return;
+
   try {
     await AsyncStorage.setItem(DEMO_MODE_KEY, "true");
     logger.log("[Demo Mode] Activated");
@@ -313,6 +325,9 @@ export function clearDemoData(): void {
  * Demo mode only restores sample data - does NOT unlock premium.
  */
 export async function restoreDemoModeIfActive(): Promise<void> {
+  // Defense-in-depth: demo mode only restores in development builds
+  if (!__DEV__) return;
+
   try {
     const isDemo = await AsyncStorage.getItem(DEMO_MODE_KEY);
 

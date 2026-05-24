@@ -78,6 +78,8 @@ interface IntegrationsState {
   // New integration-specific state
   appleCalendar: AppleCalendarState;
   appleReminders: AppleRemindersState;
+  // Google Calendar state
+  googleCalendarEmail: string | null;
   // Sync mutex flags
   syncMutex: SyncMutexState;
   // Flow lock for purchase/permission coordination
@@ -101,6 +103,10 @@ interface IntegrationsActions {
   setAppleRemindersPermission: (status: PermissionStatus) => void;
   setSelectedReminderLists: (ids: string[], meta: ReminderListMeta[]) => void;
   updateAppleRemindersLastSync: () => void;
+
+  // Google Calendar actions
+  setGoogleCalendarConnected: (connected: boolean, email?: string | null) => void;
+  disconnectGoogleCalendar: () => void;
 
   // Utility actions
   disconnectAppleCalendar: () => void;
@@ -197,6 +203,7 @@ export const useIntegrationsStore = create<IntegrationsStore>()(
       integrations: DEFAULT_INTEGRATIONS,
       appleCalendar: DEFAULT_APPLE_CALENDAR,
       appleReminders: DEFAULT_APPLE_REMINDERS,
+      googleCalendarEmail: null,
       syncMutex: DEFAULT_SYNC_MUTEX,
       flowLock: DEFAULT_FLOW_LOCK,
 
@@ -328,6 +335,25 @@ export const useIntegrationsStore = create<IntegrationsStore>()(
         }));
       },
 
+      // Google Calendar actions
+      setGoogleCalendarConnected: (connected, email) => {
+        set((state) => ({
+          googleCalendarEmail: connected ? (email ?? state.googleCalendarEmail) : null,
+          integrations: state.integrations.map((i) =>
+            i.id === "google-calendar" ? { ...i, isConnected: connected } : i
+          ),
+        }));
+      },
+
+      disconnectGoogleCalendar: () => {
+        set((state) => ({
+          googleCalendarEmail: null,
+          integrations: state.integrations.map((i) =>
+            i.id === "google-calendar" ? { ...i, isConnected: false } : i
+          ),
+        }));
+      },
+
       // Sync mutex actions
       setSyncingCalendar: (syncing) => {
         set((state) => ({
@@ -406,6 +432,7 @@ export const useIntegrationsStore = create<IntegrationsStore>()(
         integrations: state.integrations,
         appleCalendar: state.appleCalendar,
         appleReminders: state.appleReminders,
+        googleCalendarEmail: state.googleCalendarEmail,
       }),
     }
   )

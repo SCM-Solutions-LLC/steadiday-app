@@ -274,7 +274,7 @@ export default function ConnectedAppsScreen() {
     if (integrationId === "apple-health" && healthFailure === "sync-failed") {
       return colors.error;
     }
-    return isConnected ? "#6DB193" : colors.textSecondary;
+    return isConnected ? colors.success : colors.textSecondary;
   };
 
   // Check if integration should show manage button

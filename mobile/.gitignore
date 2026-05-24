@@ -45,6 +45,9 @@ expo.log
 device*.log
 
 # Environment files - NEVER commit these
+.env
+.env.*
+!.env.example
 .env.local
 .env.development
 .env.production
@@ -52,3 +55,6 @@ device*.log
 
 # API keys and secrets
 secrets/
+
+# EAS build config (contains secrets in env block)
+eas.json

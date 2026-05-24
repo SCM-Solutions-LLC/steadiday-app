@@ -19,6 +19,7 @@ import Button from "../components/Button";
 import * as Calendar from "expo-calendar";
 import { logger } from "../utils/logger";
 import { requestHealthPermissions } from "../utils/appleHealthSync";
+import { googleCalendarService } from "../sync/googleCalendarSync";
 import { BackButton } from "../components/ui";
 
 type Props = {
@@ -46,6 +47,8 @@ export default function ConnectAppsDetailScreen({ navigation, route }: Props) {
   const setAppleRemindersConnected = useIntegrationsStore((s) => s.setAppleRemindersConnected);
   const setAppleRemindersPermission = useIntegrationsStore((s) => s.setAppleRemindersPermission);
   const setSelectedReminderLists = useIntegrationsStore((s) => s.setSelectedReminderLists);
+  const setGoogleCalendarConnected = useIntegrationsStore((s) => s.setGoogleCalendarConnected);
+  const disconnectGoogleCalendar = useIntegrationsStore((s) => s.disconnectGoogleCalendar);
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [selectedSyncPref, setSelectedSyncPref] = useState<SyncPreference>("two-way");
@@ -89,6 +92,9 @@ export default function ConnectAppsDetailScreen({ navigation, route }: Props) {
       setAppleCalendarConnected(false);
     } else if (appId === "apple-reminders") {
       setAppleRemindersConnected(false);
+    } else if (appId === "google-calendar") {
+      googleCalendarService.disconnect();
+      disconnectGoogleCalendar();
     }
   };
 
@@ -124,6 +130,14 @@ export default function ConnectAppsDetailScreen({ navigation, route }: Props) {
           permissionGranted = status === "granted";
           permissionType = "Reminders";
           logger.log(`[ConnectAppsDetail] Reminders permission status: ${status}`);
+        } else if (appId === "google-calendar") {
+          logger.log("[ConnectAppsDetail] Starting Google Calendar OAuth...");
+          const result = await googleCalendarService.connect();
+          permissionGranted = result.success;
+          if (result.success) {
+            setGoogleCalendarConnected(true, result.email);
+          }
+          permissionType = "";
         } else if (appId === "apple-health") {
           logger.log("[ConnectAppsDetail] Requesting Health permissions...");
           const healthResult = await requestHealthPermissions();

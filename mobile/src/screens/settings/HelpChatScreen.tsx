@@ -25,8 +25,6 @@ import { saveFeedback } from "../../utils/feedbackStorage";
 import { maybeRequestReview } from "../../utils/reviewPrompt";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from "expo-audio";
-import { transcribeAudio } from "../../api/transcribe-audio";
 
 // Formsubmit endpoint for unanswered questions
 const QUESTION_ENDPOINT = "https://formsubmit.co/ajax/support@steadiday.com";
@@ -161,71 +159,6 @@ export default function HelpChatScreen() {
   const [surveyFeedbackText, setSurveyFeedbackText] = useState("");
   const [surveySubmitted, setSurveySubmitted] = useState(false);
   const [questionCategory, setQuestionCategory] = useState<QuestionCategory>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-
-  const handleMicPress = useCallback(async () => {
-    if (isTranscribing) return;
-
-    if (isRecording) {
-      try {
-        await audioRecorder.stop();
-        setIsRecording(false);
-        setIsTranscribing(true);
-
-        if (hapticEnabled) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-
-        const uri = audioRecorder.uri;
-        if (!uri) {
-          setIsTranscribing(false);
-          return;
-        }
-
-        const transcribedText = await transcribeAudio(uri);
-        setIsTranscribing(false);
-
-        if (transcribedText && transcribedText.trim()) {
-          setInputText(transcribedText.trim());
-        }
-      } catch {
-        setIsRecording(false);
-        setIsTranscribing(false);
-        if (hapticEnabled) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        }
-        const errorMsg: ChatMessage = {
-          id: `bot-error-${Date.now()}`,
-          type: "bot",
-          text: "Sorry, I could not understand the audio. Please try again or type your question instead.",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorMsg]);
-      }
-    } else {
-      try {
-        const { granted } = await requestRecordingPermissionsAsync();
-        if (!granted) return;
-
-        await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-        await audioRecorder.prepareToRecordAsync();
-        audioRecorder.record();
-        setIsRecording(true);
-
-        if (hapticEnabled) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }
-      } catch {
-        setIsRecording(false);
-        if (hapticEnabled) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        }
-      }
-    }
-  }, [isRecording, isTranscribing, audioRecorder, hapticEnabled]);
 
   // Generate personalized greeting
   const personalizedGreeting = getPersonalizedGreeting(
@@ -1715,8 +1648,8 @@ export default function HelpChatScreen() {
             <TextInput
               value={inputText}
               onChangeText={setInputText}
-              placeholder={isTranscribing ? "Transcribing..." : isRecording ? "Listening..." : "Type or tap mic..."}
-              placeholderTextColor={isRecording ? "#EF4444" : colors.textTertiary || colors.textSecondary}
+              placeholder="Type your question..."
+              placeholderTextColor={colors.textTertiary || colors.textSecondary}
               onSubmitEditing={() => handleSend()}
               returnKeyType="send"
               className={`flex-1 py-3 ${textClasses.body}`}
@@ -1725,34 +1658,9 @@ export default function HelpChatScreen() {
                 maxHeight: 100,
               }}
               multiline
-              editable={!isRecording && !isTranscribing}
               accessibilityLabel="Type your question"
+              accessibilityHint="Use your keyboard microphone button to dictate"
             />
-            <Pressable
-              onPress={handleMicPress}
-              disabled={isTranscribing}
-              className="items-center justify-center rounded-full active:opacity-70"
-              style={{
-                width: 44,
-                height: 44,
-                backgroundColor: isRecording ? "#EF4444" : isTranscribing ? colors.border : colors.background,
-                borderWidth: isRecording ? 0 : 1.5,
-                borderColor: isRecording ? "transparent" : colors.border,
-                marginRight: 4,
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={isRecording ? "Stop recording" : "Start voice input"}
-            >
-              {isTranscribing ? (
-                <Ionicons name="hourglass" size={20} color={colors.textSecondary} />
-              ) : (
-                <Ionicons
-                  name={isRecording ? "stop" : "mic"}
-                  size={20}
-                  color={isRecording ? "white" : colors.textSecondary}
-                />
-              )}
-            </Pressable>
             <Pressable
               onPress={() => handleSend()}
               disabled={!inputText.trim()}
@@ -1772,6 +1680,12 @@ export default function HelpChatScreen() {
               />
             </Pressable>
           </View>
+          <Text
+            className={`${textClasses.small} mt-2`}
+            style={{ color: colors.textSecondary, textAlign: "center" }}
+          >
+            Tip: Use your keyboard microphone button to dictate.
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </Screen>

@@ -20,7 +20,7 @@ import {
   getBiometricName,
 } from "../utils/biometricAuth";
 import { SessionManager } from "../utils/sessionManager";
-import { DEMO_PIN, activateDemoMode } from "../utils/demoMode";
+import { isDemoPin, activateDemoMode } from "../utils/demoMode";
 import { useTheme } from "../utils/useTheme";
 import Button from "../components/Button";
 import CustomSwitch from "../components/CustomSwitch";
@@ -83,9 +83,8 @@ export default function CreateAccountScreen({ navigation }: Props) {
       return;
     }
 
-    // DEMO MODE: Silently activate demo mode if demo PIN is used
-    // Demo data loads in background, but user continues normal onboarding
-    if (pin === DEMO_PIN) {
+    // DEV ONLY: demo PIN activates demo mode for local testing
+    if (isDemoPin(pin)) {
       await activateDemoMode();
       // Continue with normal flow - don't return early
     }

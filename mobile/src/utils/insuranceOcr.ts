@@ -1,5 +1,5 @@
 import { analyzeImageWithAI } from "../api/openai";
-import * as FileSystem from 'expo-file-system/legacy';
+import { compressImageUri } from "./imageCompression";
 import { logger } from "./logger";
 
 interface ExtractedInsuranceData {
@@ -11,10 +11,7 @@ interface ExtractedInsuranceData {
 
 export async function extractInsuranceData(imageUri: string): Promise<ExtractedInsuranceData> {
   try {
-    // Read the image file as base64
-    const base64 = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    const base64 = await compressImageUri(imageUri);
 
     const prompt = `Extract the following information from this insurance card image. Return ONLY a JSON object with these fields (use null if not found):
 {

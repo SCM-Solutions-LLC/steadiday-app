@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { View, Text, Pressable, InteractionManager } from "react-native";
+import { View, Text, Pressable, InteractionManager, Platform } from "react-native";
 import { Screen } from "../components/Screen";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useTaskStore } from "../state/stores/taskStore";
@@ -563,7 +563,9 @@ export default function TasksScreen() {
                       iconColor="#CA8A04"
                       lightBgColor="#FEF9C3"
                       lightBorderColor="#FDE68A"
-                      message="Tip: You can sync tasks from Apple Calendar or Apple Reminders in Settings > Connected Apps"
+                      message={Platform.OS === "ios"
+                        ? "Tip: You can sync tasks from Apple Calendar or Apple Reminders in Settings > Connected Apps"
+                        : "Tip: You can sync tasks from Google Calendar in Settings > Connected Apps"}
                       permanent={true}
                     />
                   </View>
@@ -620,7 +622,7 @@ export default function TasksScreen() {
           title="Swipe to Edit or Delete"
           description="Swipe any task left to reveal edit and delete options."
           icon="hand-left-outline"
-          iconColor="#2F80ED"
+          iconColor={primary}
           animationType="swipe"
           demoContent={
             <View className="flex-row items-center justify-between">
@@ -629,23 +631,23 @@ export default function TasksScreen() {
                   <Ionicons name="checkbox" size={24} color={primary} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-gray-800">Example Task</Text>
-                  <Text className="text-sm text-gray-600">Swipe left to see options</Text>
+                  <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>Example Task</Text>
+                  <Text className="text-sm" style={{ color: colors.textSecondary }}>Swipe left to see options</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-back" size={24} color="#999999" />
+              <Ionicons name="chevron-back" size={24} color={colors.textTertiary} />
             </View>
           }
           instructions={[
             {
               icon: "pencil",
-              iconBgColor: "#2F80ED",
+              iconBgColor: primary,
               title: "Swipe left to edit",
               description: "Swipe any item left to reveal the edit button",
             },
             {
               icon: "trash",
-              iconBgColor: "#CC3A3A",
+              iconBgColor: colors.error,
               title: "Swipe left to delete",
               description: "The delete button appears next to edit",
             },

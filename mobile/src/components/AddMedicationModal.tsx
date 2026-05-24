@@ -25,6 +25,7 @@ import {
   RemindersSection,
 } from "./medications/forms";
 import { logger } from "../utils/logger";
+import { compressImageBase64 } from "../utils/imageCompression";
 import { useConfirmModal } from "./ConfirmModal";
 
 interface Props {
@@ -171,6 +172,8 @@ export default function AddMedicationModal({
     updateField("isAnalyzingPhoto", true);
 
     try {
+      const compressed = await compressImageBase64(base64Image);
+
       const medicationPrompt = `You are a medication identification expert. Analyze this photo of medication packaging, bottle, box, or label.
 
 IMPORTANT: This can be either:
@@ -200,9 +203,9 @@ If you absolutely cannot identify ANY medication information, respond with:
 
 Respond with ONLY the JSON, no other text.`;
 
-      logger.log("[MedicationPhoto] Sending to AI for analysis (30s timeout)...");
-      const analysis = await analyzeImageWithAI(base64Image, medicationPrompt, 30000);
-      logger.log("[MedicationPhoto] AI response received:", analysis.substring(0, 100));
+      logger.log("[MedicationPhoto] Sending to AI for analysis...");
+      const analysis = await analyzeImageWithAI(compressed, medicationPrompt, 30000);
+      logger.log("[MedicationPhoto] AI response received");
 
       let cleanedContent = analysis.trim();
       if (cleanedContent.startsWith("```")) {
@@ -213,7 +216,6 @@ Respond with ONLY the JSON, no other text.`;
       }
 
       const data = JSON.parse(cleanedContent);
-      logger.log("[MedicationPhoto] Parsed data:", JSON.stringify(data));
 
       if (data.error) {
         logger.log("[MedicationPhoto] AI could not identify medication");
@@ -222,17 +224,13 @@ Respond with ONLY the JSON, no other text.`;
           "Could not read the medication information from this photo. Please try again with a clearer image, or enter the details manually."
         );
       } else {
-        // Track if any fields were successfully filled
         let fieldsPopulated = false;
 
-        // Update form fields - user will see these filled in automatically
         if (data.name) {
-          logger.log("[MedicationPhoto] Setting name:", data.name);
           updateField("name", data.name);
           fieldsPopulated = true;
         }
         if (data.dosage && data.dosage !== "not specified") {
-          logger.log("[MedicationPhoto] Setting dosage:", data.dosage);
           updateField("dosage", data.dosage);
           fieldsPopulated = true;
         }
@@ -245,19 +243,18 @@ Respond with ONLY the JSON, no other text.`;
             weekly: "weekly",
           };
           if (freqMap[data.frequency]) {
-            logger.log("[MedicationPhoto] Setting frequency:", data.frequency);
             handleFrequencyChange(freqMap[data.frequency]);
           }
         }
 
         if (fieldsPopulated) {
-          logger.log("[MedicationPhoto] Successfully filled in medication info");
+          logger.log("[MedicationPhoto] Fields populated successfully");
           alert(
             "Medication Detected",
             "Medication details have been filled in. Please review and adjust as needed."
           );
         } else {
-          logger.log("[MedicationPhoto] No fields could be extracted from response");
+          logger.log("[MedicationPhoto] No fields extracted from response");
           alert(
             "Unable to Identify Medication",
             "Could not read the medication information from this photo. Please try again with a clearer image, or enter the details manually."
@@ -265,18 +262,12 @@ Respond with ONLY the JSON, no other text.`;
         }
       }
     } catch (error) {
-      logger.error("[MedicationPhoto] Photo analysis failed:", error);
-      if (error instanceof Error) {
-        logger.error("[MedicationPhoto] Error message:", error.message);
-        logger.error("[MedicationPhoto] Error stack:", error.stack);
-      }
-      // Show alert so user knows the analysis failed
+      logger.error("[MedicationPhoto] Photo analysis failed:", error instanceof Error ? error.message : "unknown");
       alert(
         "Photo Analysis Failed",
         "Could not analyze the medication photo. Please check your internet connection and try again, or enter the details manually."
       );
     } finally {
-      logger.log("[MedicationPhoto] Resetting isAnalyzingPhoto state");
       updateField("isAnalyzingPhoto", false);
     }
   };

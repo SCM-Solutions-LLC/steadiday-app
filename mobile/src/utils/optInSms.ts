@@ -14,14 +14,10 @@ function getFirstName(fullName: string): string {
 function buildMessage(contactName: string, userName: string): string {
   const firstName = getFirstName(contactName);
   return (
-    `Hi ${firstName}! I just added you as an emergency contact in my SteadiDay app. ` +
-    "If the app ever detects a fall or I press the emergency button, " +
-    "you'll get an automated text from (434) 448-9187 with my location. " +
-    "It will look something like this:\n\n" +
-    `"SteadiDay Emergency Alert: ${userName} may have had a fall and is not responding. ` +
-    'Last known location: maps.google.com/?q=..."\n\n' +
-    "Just wanted you to know so you recognize it if it ever happens! " +
-    "You can reply STOP to that number anytime to opt out."
+    `Hi ${firstName}! You've been added as an emergency contact in my SteadiDay app. ` +
+    `If I press the SOS button or the app detects a fall, ` +
+    `you'll get an automated text with my location. ` +
+    `Just wanted you to know so you recognize it if it ever comes through.`
   );
 }
 

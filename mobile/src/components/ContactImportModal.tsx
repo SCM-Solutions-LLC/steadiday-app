@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { fetchPhoneContacts, PhoneContact } from "../utils/contactImporter";
 import { formatPhoneNumber } from "../utils/phoneFormatter";
+import { useTheme } from "../utils/useTheme";
 
 interface ContactImportModalProps {
   visible: boolean;
@@ -30,6 +31,8 @@ interface ContactCardProps {
   onToggle: (contact: PhoneContact) => void;
   getInitials: (name: string) => string;
   getAvatarColor: (index: number) => string;
+  themeColors: any;
+  primaryColor: string;
 }
 
 const ContactCard = memo(function ContactCard({
@@ -39,10 +42,13 @@ const ContactCard = memo(function ContactCard({
   onToggle,
   getInitials,
   getAvatarColor,
+  themeColors,
+  primaryColor,
 }: ContactCardProps) {
   return (
     <View
-      className="bg-light-card rounded-3xl p-5 mb-5 border-2 border-light-divider"
+      className="rounded-3xl p-5 mb-5"
+      style={{ backgroundColor: themeColors.cardBackground, borderWidth: 2, borderColor: themeColors.border }}
     >
       <View className="flex-row items-center mb-4">
         {contact.imageUri ? (
@@ -62,10 +68,10 @@ const ContactCard = memo(function ContactCard({
           </View>
         )}
         <View className="flex-1">
-          <Text className="text-2xl font-semibold text-light-heading mb-1">
+          <Text className="text-2xl font-semibold mb-1" style={{ color: themeColors.textPrimary }}>
             {contact.name}
           </Text>
-          <Text className="text-lg text-light-body">
+          <Text className="text-lg" style={{ color: themeColors.textSecondary }}>
             {formatPhoneNumber(contact.phoneNumber)}
           </Text>
         </View>
@@ -74,20 +80,16 @@ const ContactCard = memo(function ContactCard({
       {/* Selection Button - Only Trusted Contact option */}
       <Pressable
         onPress={() => onToggle(contact)}
-        className={`w-full px-4 py-4 rounded-2xl items-center justify-center ${
-          isSelected
-            ? "bg-sage"
-            : "bg-[#E8F5EF] active:bg-[#D4EBE2]"
-        }`}
+        className="w-full px-4 py-4 rounded-2xl items-center justify-center active:opacity-80"
+        style={{ backgroundColor: isSelected ? primaryColor : themeColors.primaryLight }}
       >
         <View className="flex-row items-center">
           {isSelected && (
             <Ionicons name="checkmark-circle" size={24} color="white" style={{ marginRight: 8 }} />
           )}
           <Text
-            className={`text-lg font-semibold ${
-              isSelected ? "text-white" : "text-sage"
-            }`}
+            className="text-lg font-semibold"
+            style={{ color: isSelected ? "white" : primaryColor }}
           >
             {isSelected ? "Selected as Trusted Contact" : "Add as Trusted Contact"}
           </Text>
@@ -102,6 +104,7 @@ export default function ContactImportModal({
   onClose,
   onImportContacts,
 }: ContactImportModalProps) {
+  const { colors, primary } = useTheme();
   const [phoneContacts, setPhoneContacts] = useState<PhoneContact[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -178,45 +181,46 @@ export default function ContactImportModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-[#F7F7F7]">
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
         <View className="flex-1">
           {/* Header */}
-          <View className="px-8 py-6 bg-light-card border-b border-light-divider">
+          <View className="px-8 py-6" style={{ backgroundColor: colors.cardBackground, borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-3xl font-semibold text-light-heading">
+              <Text className="text-3xl font-semibold" style={{ color: colors.textPrimary }}>
                 Import Contacts
               </Text>
               <Pressable
                 onPress={onClose}
-                className="w-12 h-12 rounded-full items-center justify-center active:bg-[#E5E5E5]"
+                className="w-12 h-12 rounded-full items-center justify-center active:opacity-70"
               >
-                <Ionicons name="close" size={32} color="#1A1A1A" />
+                <Ionicons name="close" size={32} color={colors.textPrimary} />
               </Pressable>
             </View>
 
-            <Text className="text-lg text-light-body mb-2 leading-relaxed">
+            <Text className="text-lg mb-2 leading-relaxed" style={{ color: colors.textSecondary }}>
               Select contacts to add as trusted contacts
             </Text>
 
             {/* Info Note */}
-            <View className="bg-[#E8F5EF] border border-[#6DB193] rounded-2xl p-4 mb-4">
+            <View className="rounded-2xl p-4 mb-4" style={{ backgroundColor: colors.primaryLight, borderWidth: 1, borderColor: primary }}>
               <View className="flex-row items-start">
-                <Ionicons name="information-circle" size={20} color="#6DB193" style={{ marginTop: 2 }} />
-                <Text className="text-base text-[#1A1A1A] ml-2 leading-relaxed flex-1">
+                <Ionicons name="information-circle" size={20} color={primary} style={{ marginTop: 2 }} />
+                <Text className="text-base ml-2 leading-relaxed flex-1" style={{ color: colors.textPrimary }}>
                   Trusted contacts will be notified when you use the SOS button in an emergency.
                 </Text>
               </View>
             </View>
 
             {/* Search Bar */}
-            <View className="flex-row items-center bg-[#F7F7F7] rounded-2xl px-4 py-3 border border-light-divider">
-              <Ionicons name="search" size={24} color="#666666" />
+            <View className="flex-row items-center rounded-2xl px-4 py-3" style={{ backgroundColor: colors.surfaceSubtle, borderWidth: 1, borderColor: colors.border }}>
+              <Ionicons name="search" size={24} color={colors.textSecondary} />
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search contacts..."
-                className="flex-1 ml-3 text-xl text-light-heading"
-                placeholderTextColor="#999999"
+                className="flex-1 ml-3 text-xl"
+                style={{ color: colors.textPrimary }}
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
           </View>
@@ -224,17 +228,17 @@ export default function ContactImportModal({
           {/* Contacts List */}
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color="#6DB193" />
-              <Text className="text-xl text-light-body mt-4">Loading contacts...</Text>
+              <ActivityIndicator size="large" color={primary} />
+              <Text className="text-xl mt-4" style={{ color: colors.textSecondary }}>Loading contacts...</Text>
             </View>
           ) : filteredContacts.length === 0 ? (
             <View className="flex-1 items-center justify-center px-8">
-              <Ionicons name="people-outline" size={64} color="#6DB193" />
-              <Text className="text-xl text-light-body text-center mt-4">
+              <Ionicons name="people-outline" size={64} color={primary} />
+              <Text className="text-xl text-center mt-4" style={{ color: colors.textSecondary }}>
                 {searchQuery ? "No contacts found" : "No contacts available"}
               </Text>
               {!searchQuery && (
-                <Text className="text-lg text-[#666666] text-center mt-2 leading-relaxed">
+                <Text className="text-lg text-center mt-2 leading-relaxed" style={{ color: colors.textTertiary }}>
                   Make sure you have granted contact permissions
                 </Text>
               )}
@@ -250,6 +254,8 @@ export default function ContactImportModal({
                   onToggle={toggleContactSelection}
                   getInitials={getInitials}
                   getAvatarColor={getAvatarColor}
+                  themeColors={colors}
+                  primaryColor={primary}
                 />
               ))}
             </ScrollView>
@@ -257,15 +263,12 @@ export default function ContactImportModal({
 
           {/* Footer with Import Button */}
           {!loading && filteredContacts.length > 0 && (
-            <View className="px-8 py-6 bg-light-card border-t border-light-divider">
+            <View className="px-8 py-6" style={{ backgroundColor: colors.cardBackground, borderTopWidth: 1, borderTopColor: colors.border }}>
               <Pressable
                 onPress={handleImport}
                 disabled={selectedContacts.size === 0}
-                className={`px-8 py-6 rounded-2xl min-h-[70px] items-center justify-center ${
-                  selectedContacts.size === 0
-                    ? "bg-[#CCCCCC]"
-                    : "bg-sage active:bg-[#5C9A7F]"
-                }`}
+                className="px-8 py-6 rounded-2xl min-h-[70px] items-center justify-center active:opacity-80"
+                style={{ backgroundColor: selectedContacts.size === 0 ? colors.buttonDisabled : primary }}
               >
                 <Text className="text-white text-xl font-semibold">
                   Import {selectedContacts.size > 0 ? `${selectedContacts.size} Contact${selectedContacts.size !== 1 ? "s" : ""}` : "Contacts"}

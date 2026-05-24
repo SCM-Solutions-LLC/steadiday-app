@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Pressable, TextInput, Linking, ScrollView, Platform, StyleSheet, Keyboard, Image, ActivityIndicator, useWindowDimensions } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { Screen } from "../../components/Screen";
 import { Ionicons } from "@expo/vector-icons";
 import { useTaskStore } from "../../state/stores/taskStore";
@@ -188,8 +189,26 @@ export default function FindMyCarScreen() {
     }
   };
 
+  const isValidCoordinate = (lat: number, lng: number): boolean => {
+    return (
+      typeof lat === "number" &&
+      typeof lng === "number" &&
+      isFinite(lat) &&
+      isFinite(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  };
+
   const handleGetDirections = async () => {
     if (!parkingSpot) return;
+
+    if (!isValidCoordinate(parkingSpot.latitude, parkingSpot.longitude)) {
+      alert("Invalid Location", "The saved parking location appears to be invalid. Please save a new location.");
+      return;
+    }
 
     triggerHaptic();
     directionsButtonScale.value = withSpring(0.95, { damping: 15 });
@@ -199,25 +218,36 @@ export default function FindMyCarScreen() {
 
     await calculateDistance();
 
+    const lat = parkingSpot.latitude;
+    const lng = parkingSpot.longitude;
+
     const url = Platform.select({
-      ios: `maps://app?daddr=${parkingSpot.latitude},${parkingSpot.longitude}`,
-      android: `google.navigation:q=${parkingSpot.latitude},${parkingSpot.longitude}`,
-      default: `http://maps.apple.com/?daddr=${parkingSpot.latitude},${parkingSpot.longitude}`,
+      ios: `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`,
+      android: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
     });
 
     try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        // Fallback to web maps
-        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${parkingSpot.latitude},${parkingSpot.longitude}`;
-        await Linking.openURL(webUrl);
-      }
+      await Linking.openURL(url);
     } catch (error) {
       logger.error("Error opening maps:", error);
       alert("Error", "Could not open maps application.");
     }
+  };
+
+  const handleCopyLocation = async () => {
+    if (!parkingSpot) return;
+
+    if (!isValidCoordinate(parkingSpot.latitude, parkingSpot.longitude)) {
+      alert("Invalid Location", "The saved parking location appears to be invalid.");
+      return;
+    }
+
+    triggerHaptic();
+    const link = `https://www.google.com/maps/search/?api=1&query=${parkingSpot.latitude},${parkingSpot.longitude}`;
+    await Clipboard.setStringAsync(link);
+    triggerHaptic("success");
+    alert("Copied", "Location link copied to clipboard.");
   };
 
   const handleSaveNewSpot = () => {
@@ -628,6 +658,31 @@ export default function FindMyCarScreen() {
                     Get Directions
                   </Text>
                 </Animated.View>
+              </Pressable>
+
+              {/* Copy Location Link */}
+              <Pressable
+                onPress={handleCopyLocation}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                  borderRadius: 16,
+                  backgroundColor: pressed ? colors.textSecondary + "15" : colors.cardBackground,
+                  borderWidth: 1.5,
+                  borderColor: colors.border || colors.textSecondary + "30",
+                  marginBottom: 16,
+                  minHeight: 52,
+                })}
+                accessibilityLabel="Copy location link to clipboard"
+                accessibilityRole="button"
+              >
+                <Ionicons name="copy-outline" size={20} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, marginLeft: 10, fontWeight: "600", fontSize: 16 }}>
+                  Copy Location Link
+                </Text>
               </Pressable>
 
               {/* Improved Action Buttons */}

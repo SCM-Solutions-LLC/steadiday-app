@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useKeepAwake } from "expo-keep-awake";
 import Button from "../../Button";
 import type { FallAlertModalProps } from "../types";
 
@@ -12,6 +13,8 @@ export function FallAlertModal({
   textClasses,
   colors,
 }: FallAlertModalProps) {
+  useKeepAwake("fall-alert-modal");
+
   return (
     <Modal
       visible={visible}

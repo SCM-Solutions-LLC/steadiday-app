@@ -79,8 +79,8 @@ function TaskCardComponent({
           onPress={() => onToggleComplete(task.id)}
           className="w-12 h-12 rounded-xl border-2 items-center justify-center mr-3"
           style={{
-            backgroundColor: task.completed ? "#6DB193" : "transparent",
-            borderColor: task.completed ? "#6DB193" : colors.divider,
+            backgroundColor: task.completed ? themeColors.success : "transparent",
+            borderColor: task.completed ? themeColors.success : colors.divider,
             minWidth: 48,
             minHeight: 48,
           }}

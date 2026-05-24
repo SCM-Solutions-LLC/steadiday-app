@@ -18,6 +18,9 @@ server.log
 studio.log
 
 # dotenv environment variable files
+.env
+.env.*
+!.env.example
 .env.development.local
 .env.test.local
 .env.production.local
@@ -36,3 +39,6 @@ studio.log
 
 # Prisma generated files (bunx prisma generate)
 /generated/prisma
+
+# SQLite runtime data
+data/

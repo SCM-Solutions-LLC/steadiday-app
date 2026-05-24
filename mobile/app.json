@@ -3,7 +3,7 @@
     "name": "SteadiDay",
     "slug": "steadiday",
     "scheme": "vibecode",
-    "version": "1.2.19",
+    "version": "1.2.24",
     "description": "SteadiDay is a daily health and wellness assistant designed for adults 50 and older who live independently. The app helps manage medications with photo-based auto-fill, daily tasks and appointments, health metrics from Apple Health, and emergency contacts with SOS functionality. Features include large text, high-contrast design, fall detection, calendar and reminders sync, mind break games, and helpful tools like a magnifier and flashlight.",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -18,7 +18,7 @@
       "appleTeamId": "JWDS8GNFPP",
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.steadiday",
-      "buildNumber": "60",
+      "buildNumber": "63",
       "infoPlist": {
         "NSCameraUsageDescription": "SteadiDay uses the camera to capture photos inside the app before you publish them.",
         "NSMicrophoneUsageDescription": "SteadiDay uses the microphone to record audio tracks that the app attaches to your creations.",
@@ -139,11 +139,15 @@
       [
         "expo-build-properties",
         {
+          "ios": {
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true,
+            "deploymentTarget": "17.0"
+          },
           "android": {
-            "minSdkVersion": 26,
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0"
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 26
           }
         }
       ],

@@ -102,7 +102,7 @@ export default function ConnectAppsAutoDetectScreen({ navigation, route }: Props
                         <Text className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                           {app.name}
                         </Text>
-                        <Text className="text-base mt-1" style={{ color: "#6DB193" }}>
+                        <Text className="text-base mt-1" style={{ color: colors.success }}>
                           Installed
                         </Text>
                       </View>

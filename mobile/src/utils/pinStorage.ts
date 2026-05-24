@@ -11,7 +11,7 @@ import * as Crypto from "expo-crypto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { logger } from "./logger";
-import { DEMO_PIN, activateDemoMode } from "./demoMode";
+import { isDemoPin, activateDemoMode } from "./demoMode";
 
 const PIN_HASH_KEY = "steadiday_pin_hash";
 const BIOMETRIC_ENABLED_KEY = "steadiday_biometric_enabled";
@@ -119,8 +119,8 @@ export async function setPin(pin: string): Promise<boolean> {
  */
 export async function verifyPin(pin: string): Promise<boolean> {
   try {
-    // DEMO MODE: Check for demo PIN first (for App Store review)
-    if (pin === DEMO_PIN) {
+    // DEV ONLY: demo PIN activates demo mode for local testing
+    if (isDemoPin(pin)) {
       logger.log("[Demo Mode] Demo PIN entered - activating demo mode");
       await activateDemoMode();
       return true;

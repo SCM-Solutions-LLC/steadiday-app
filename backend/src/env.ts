@@ -1,4 +1,22 @@
 import { z } from "zod";
+import { readFileSync } from "fs";
+
+// Explicitly load .env so values are available even after hot-reload
+try {
+  const envText = readFileSync(".env", "utf8");
+  for (const line of envText.split("\n")) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (match && match[1] && match[2] !== undefined) {
+      const key = match[1];
+      const value = match[2];
+      if (process.env[key] === undefined) {
+        process.env[key] = value.trim();
+      }
+    }
+  }
+} catch {
+  // .env file not present; rely on environment variables set at process start
+}
 
 /**
  * Environment variable schema using Zod
@@ -11,17 +29,19 @@ const envSchema = z.object({
   BACKEND_URL: z.url("BACKEND_URL must be a valid URL").default("http://localhost:3000"), // Set via the Vibecode enviroment at run-time
 
   // AI API Keys (server-side only - NOT exposed to client)
-  OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
+  // Optional: AI routes return 503 when these are absent
+  OPENAI_API_KEY: z.string().optional(),
   GROK_API_KEY: z.string().optional(),
 
   // Client authentication key for AI routes
-  APP_CLIENT_KEY: z.string().min(1, "APP_CLIENT_KEY is required"),
+  // Optional: AI routes return 503 when absent
+  APP_CLIENT_KEY: z.string().optional(),
 
-  // Twilio SMS (for emergency alerts)
-  TWILIO_ACCOUNT_SID: z.string().min(1, "TWILIO_ACCOUNT_SID is required"),
-  TWILIO_AUTH_TOKEN: z.string().min(1, "TWILIO_AUTH_TOKEN is required"),
-  TWILIO_PHONE_NUMBER: z.string().min(1, "TWILIO_PHONE_NUMBER is required"),
-  EMERGENCY_API_SECRET: z.string().min(1, "EMERGENCY_API_SECRET is required"),
+  // Twilio SMS (for emergency alerts — optional; SMS endpoints return 503 when absent)
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_PHONE_NUMBER: z.string().optional(),
+  EMERGENCY_API_SECRET: z.string().optional(),
 });
 
 /**

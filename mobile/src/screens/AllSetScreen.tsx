@@ -41,8 +41,9 @@ export default function AllSetScreen({ navigation }: Props) {
     }
 
     // Entrance animations
+    let anim: Animated.CompositeAnimation | null = null;
     if (shouldAnimate) {
-      Animated.parallel([
+      anim = Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 6,
@@ -63,12 +64,16 @@ export default function AllSetScreen({ navigation }: Props) {
             useNativeDriver: true,
           }),
         ]),
-      ]).start();
+      ]);
+      anim.start();
     } else {
       scaleAnim.setValue(1);
       fadeAnim.setValue(1);
       checkmarkScale.setValue(1);
     }
+    return () => {
+      if (anim) anim.stop();
+    };
   }, []);
 
   const handleStart = () => {

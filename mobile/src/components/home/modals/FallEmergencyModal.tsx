@@ -12,6 +12,7 @@ interface FallEmergencyModalProps {
   visible: boolean;
   contactResults: { name: string; status: "sent" | "failed" }[];
   backendSuccess: boolean;
+  failReason?: string;
   contacts: TrustedContact[];
   userName: string;
   latitude?: number;
@@ -22,10 +23,30 @@ interface FallEmergencyModalProps {
   colors: BaseWidgetProps["colors"];
 }
 
+function getFailMessage(reason?: string): string {
+  switch (reason) {
+    case "no_valid_contacts":
+      return "No emergency contacts are set up. Tap above to call 911 or add contacts in Settings.";
+    case "app_key_not_configured":
+      return "The emergency service is not fully set up on the server. Tap above to call 911 or text your contacts manually below.";
+    case "auth_failed":
+      return "Could not authenticate with the emergency server. Tap above to call 911 or text your contacts manually below.";
+    case "twilio_not_configured":
+      return "The emergency text service is not configured on the server. Tap above to call 911 or text your contacts manually below.";
+    case "network_error":
+      return "Could not reach the server. Check your internet connection. Tap above to call 911 or text your contacts manually below.";
+    case "invalid_request":
+      return "The emergency request was invalid. Tap above to call 911 or text your contacts manually below.";
+    default:
+      return "Could not send emergency texts automatically. Tap above to call 911 or text your contacts manually below.";
+  }
+}
+
 export function FallEmergencyModal({
   visible,
   contactResults,
   backendSuccess,
+  failReason,
   contacts,
   userName,
   latitude,
@@ -68,14 +89,17 @@ export function FallEmergencyModal({
   };
 
   const stopAlarm = async () => {
+    const sound = soundRef.current;
+    if (!sound) return;
+    soundRef.current = null;
     try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
+      const status = await sound.getStatusAsync();
+      if (status.isLoaded) {
+        await sound.stopAsync().catch(() => {});
+        await sound.unloadAsync().catch(() => {});
       }
-    } catch (e) {
-      logger.error("Failed to stop alarm:", e);
+    } catch {
+      // Sound already unloaded or in a transitional state — safe to ignore
     }
   };
 
@@ -175,7 +199,7 @@ export function FallEmergencyModal({
               >
                 {backendSuccess
                   ? `Emergency texts sent to ${sentNames.join(", ")}. Tap above to call 911.`
-                  : "Could not send emergency texts automatically. Tap above to call 911 or text your contacts manually below."}
+                  : getFailMessage(failReason)}
               </Text>
             </View>
             {!backendSuccess && onRetry && (

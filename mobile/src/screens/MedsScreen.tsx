@@ -577,32 +577,32 @@ export default function MedsScreen() {
         title="Swipe to Edit or Delete"
         description="Swipe any medication left to reveal edit and delete options."
         icon="hand-left-outline"
-        iconColor="#2F80ED"
+        iconColor={primary}
         animationType="swipe"
         demoContent={
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
-              <View className="bg-sage w-12 h-12 rounded-full items-center justify-center mr-3">
+              <View className="w-12 h-12 rounded-full items-center justify-center mr-3" style={{ backgroundColor: primary }}>
                 <Ionicons name="medical" size={24} color="white" />
               </View>
               <View className="flex-1">
-                <Text className="text-base font-semibold text-gray-800">Example Medication</Text>
-                <Text className="text-sm text-gray-600">Swipe left to see options</Text>
+                <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>Example Medication</Text>
+                <Text className="text-sm" style={{ color: colors.textSecondary }}>Swipe left to see options</Text>
               </View>
             </View>
-            <Ionicons name="chevron-back" size={24} color="#999999" />
+            <Ionicons name="chevron-back" size={24} color={colors.textTertiary} />
           </View>
         }
         instructions={[
           {
             icon: "pencil",
-            iconBgColor: "#2F80ED",
+            iconBgColor: primary,
             title: "Swipe left to edit",
             description: "Swipe any item left to reveal the edit button",
           },
           {
             icon: "trash",
-            iconBgColor: "#CC3A3A",
+            iconBgColor: colors.error,
             title: "Swipe left to delete",
             description: "The delete button appears next to edit",
           },

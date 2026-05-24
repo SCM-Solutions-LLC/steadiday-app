@@ -150,7 +150,7 @@ const techMadeEasyTips: DailyTip[] = [
   { id: "te-12", title: "Enable Dark Mode", content: "Dark mode is easier on your eyes at night. Find it in Settings > Display > Dark Mode." },
   { id: "te-13", title: "Back Up Your Photos", content: "Turn on iCloud Photos or Google Photos to automatically save your pictures. You will never lose precious memories.", androidContent: "Turn on Google Photos to automatically save your pictures. You will never lose precious memories." },
   { id: "te-14", title: "Use Speak Selection", content: "Have your phone read text aloud. Enable it in Settings > Accessibility > Spoken Content > Speak Selection." },
-  { id: "te-15", title: "Find My Device", content: "Lost your phone? Use Find My iPhone/Find My Device from another device or computer to locate it.", androidContent: "Lost your phone? Use Find My Device from another device or computer to locate it." },
+
   { id: "te-16", title: "Wi-Fi Calling", content: "If cell signal is weak at home, enable Wi-Fi Calling in Settings > Phone. Uses your internet for clearer calls.", androidContent: "If cell signal is weak at home, enable Wi-Fi Calling in Settings under Network and Internet. Uses your internet for clearer calls." },
   { id: "te-17", title: "Emergency SOS", content: "Pressing the side button 5 times quickly calls emergency services. Know this feature—it could save a life." },
   { id: "te-18", title: "Reduce Motion", content: "If screen animations make you dizzy, go to Settings > Accessibility > Motion > Reduce Motion." },

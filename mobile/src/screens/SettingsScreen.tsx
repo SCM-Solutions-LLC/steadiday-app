@@ -273,7 +273,7 @@ export default function SettingsScreen() {
       icon: "shield-checkmark",
       title: "Safety Features",
       subtitle: "Fall detection, trusted contacts",
-      keywords: ["safety", "fall", "detection", "emergency", "contacts", "trusted", "sos", "pin", "lock", "ring", "find phone", "alarm", "loud"],
+      keywords: ["safety", "fall", "detection", "emergency", "contacts", "trusted", "sos", "pin", "lock", "ring", "alarm", "loud"],
       screen: "SafetySettings",
       section: "Safety & Security",
       iconColorKey: "safety",

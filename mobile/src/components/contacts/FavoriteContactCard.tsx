@@ -24,13 +24,13 @@ const getInitials = (name: string) => {
     .slice(0, 2);
 };
 
+const AVATAR_COLORS = ["#2F80ED", "#6DB193", "#8B5CF6", "#F59E0B", "#EC4899"];
 const getAvatarColor = (index: number) => {
-  const colors = ["bg-primary", "bg-sage", "bg-[#8B5CF6]", "bg-[#F59E0B]", "bg-[#EC4899]"];
-  return colors[index % colors.length];
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
 };
 
 function FavoriteContactCardComponent({ contact, index, onEdit, onDelete }: FavoriteContactCardProps) {
-  const { colors } = useTheme();
+  const { colors, primary } = useTheme();
   const textSize = useSettingsStore((s) => s.textSize);
   const textClasses = getTextSizeClasses(textSize);
 
@@ -60,7 +60,8 @@ function FavoriteContactCardComponent({ contact, index, onEdit, onDelete }: Favo
             />
           ) : (
             <View
-              className={`${getAvatarColor(index)} w-16 h-16 rounded-full items-center justify-center mr-4`}
+              className="w-16 h-16 rounded-full items-center justify-center mr-4"
+              style={{ backgroundColor: getAvatarColor(index) }}
             >
               <Text className={`text-white ${textClasses.subtitle} font-bold`}>
                 {getInitials(contact.name)}
@@ -86,7 +87,8 @@ function FavoriteContactCardComponent({ contact, index, onEdit, onDelete }: Favo
         <View className="flex-row justify-around">
           <Pressable
             onPress={() => handleCall(contact.phoneNumber)}
-            className="flex-1 bg-sage rounded-2xl py-4 mx-1 items-center active:bg-[#5C9A7F]"
+            className="flex-1 rounded-2xl py-4 mx-1 items-center active:opacity-80"
+            style={{ backgroundColor: colors.success }}
             accessibilityRole="button"
             accessibilityLabel={`Call ${contact.name}`}
           >
@@ -95,7 +97,8 @@ function FavoriteContactCardComponent({ contact, index, onEdit, onDelete }: Favo
           </Pressable>
           <Pressable
             onPress={() => handleVideoCall(contact.phoneNumber)}
-            className="flex-1 bg-primary rounded-2xl py-4 mx-1 items-center active:bg-[#2570D5]"
+            className="flex-1 rounded-2xl py-4 mx-1 items-center active:opacity-80"
+            style={{ backgroundColor: primary }}
             accessibilityRole="button"
             accessibilityLabel={`Video call ${contact.name}`}
           >
@@ -104,7 +107,8 @@ function FavoriteContactCardComponent({ contact, index, onEdit, onDelete }: Favo
           </Pressable>
           <Pressable
             onPress={() => handleText(contact.phoneNumber)}
-            className="flex-1 bg-[#8B5CF6] rounded-2xl py-4 mx-1 items-center active:bg-[#7C3AED]"
+            className="flex-1 rounded-2xl py-4 mx-1 items-center active:opacity-80"
+            style={{ backgroundColor: colors.info }}
             accessibilityRole="button"
             accessibilityLabel={`Text ${contact.name}`}
           >

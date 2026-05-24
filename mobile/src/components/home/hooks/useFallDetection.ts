@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { DeviceMotion } from "expo-sensors";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useSettingsStore } from "../../../state/stores/settingsStore";
+
+const FALL_KEEP_AWAKE_TAG = "fall-detection-countdown";
 
 interface UseFallDetectionOptions {
   enabled: boolean;
@@ -23,6 +26,11 @@ export function useFallDetection({
   const [fallCountdown, setFallCountdown] = useState(countdownStart);
   const [lastFallAlertTime, setLastFallAlertTime] = useState<number>(0);
   const accelerationHistory = useRef<number[]>([]);
+  const onFallDetectedRef = useRef(onFallDetected);
+
+  useEffect(() => {
+    onFallDetectedRef.current = onFallDetected;
+  }, [onFallDetected]);
   const FALL_COOLDOWN_MS = 60000; // 1 minute cooldown between fall alerts
 
   // Fall detection thresholds (adjusted to significantly reduce false positives)
@@ -90,12 +98,24 @@ export function useFallDetection({
     };
   }, [enabled, showFallAlert, lastFallAlertTime]);
 
+  // Keep screen awake during countdown
+  useEffect(() => {
+    if (showFallAlert) {
+      activateKeepAwakeAsync(FALL_KEEP_AWAKE_TAG).catch(() => {});
+    } else {
+      deactivateKeepAwake(FALL_KEEP_AWAKE_TAG);
+    }
+    return () => {
+      deactivateKeepAwake(FALL_KEEP_AWAKE_TAG);
+    };
+  }, [showFallAlert]);
+
   // Fall alert countdown
   useEffect(() => {
     if (!showFallAlert || fallCountdown <= 0) {
       if (fallCountdown <= 0 && showFallAlert) {
-        // Auto-call emergency contact after countdown
-        onFallDetected();
+        deactivateKeepAwake(FALL_KEEP_AWAKE_TAG);
+        onFallDetectedRef.current();
         setShowFallAlert(false);
       }
       return;
@@ -106,7 +126,7 @@ export function useFallDetection({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [showFallAlert, fallCountdown, onFallDetected]);
+  }, [showFallAlert, fallCountdown]);
 
   const cancelFallAlert = useCallback(() => {
     setShowFallAlert(false);
@@ -115,13 +135,24 @@ export function useFallDetection({
 
   const triggerFallAlert = useCallback(() => {
     setShowFallAlert(false);
-    onFallDetected();
-  }, [onFallDetected]);
+    onFallDetectedRef.current();
+  }, []);
+
+  const triggerExternalFallAlert = useCallback(() => {
+    if (showFallAlert) return;
+    const now = Date.now();
+    if (now - lastFallAlertTime < FALL_COOLDOWN_MS) return;
+    setShowFallAlert(true);
+    setFallCountdown(countdownStart);
+    setLastFallAlertTime(now);
+    accelerationHistory.current = [];
+  }, [showFallAlert, lastFallAlertTime, countdownStart]);
 
   return {
     showFallAlert,
     fallCountdown,
     cancelFallAlert,
     triggerFallAlert,
+    triggerExternalFallAlert,
   };
 }

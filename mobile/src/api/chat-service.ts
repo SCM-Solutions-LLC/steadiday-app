@@ -17,7 +17,7 @@ import { logger } from "../utils/logger";
  */
 export const getOpenAITextResponse = async (messages: AIMessage[], options?: AIRequestOptions): Promise<AIResponse> => {
   try {
-    const defaultModel = "gpt-4o"; //accepts images as well, use this for image analysis
+    const defaultModel = "gpt-4o-mini";
 
     return await callOpenAI(messages, {
       model: options?.model || defaultModel,

@@ -14,7 +14,7 @@ import MagnifierScreen from "./tools/MagnifierScreen";
 import FlashlightScreen from "./tools/FlashlightScreen";
 import FindMyCarScreen from "./tools/FindMyCarScreen";
 import NotesScreen from "./tools/NotesScreen";
-import FindPhoneScreen from "./tools/FindPhoneScreen";
+
 import ShareLocationScreen from "./tools/ShareLocationScreen";
 import FoodTrackerScreen from "./FoodTrackerScreen";
 import WaterTrackerScreen from "./WaterTrackerScreen";
@@ -39,7 +39,7 @@ export type ToolsStackParamList = {
   Flashlight: undefined;
   FindMyCar: undefined;
   Notes: undefined;
-  FindPhone: undefined;
+
   ShareLocation: undefined;
   FoodTracker: undefined;
   WaterTracker: undefined;
@@ -92,10 +92,7 @@ const TOOL_COLORS = {
     bg: "#FCE4EC",
     icon: "#E91E63",
   },
-  findPhone: {
-    bg: "#FFEBEE",
-    icon: "#F44336",
-  },
+
   shareLocation: {
     bg: "#E8F5E9",
     icon: "#4CAF50",
@@ -217,15 +214,7 @@ function ToolsHomeScreen() {
       icon: "phone-portrait",
       iconColor: SECTION_COLORS.phoneHelpers,
       tools: [
-        {
-          id: "find-phone",
-          name: "Find Phone",
-          icon: "phone-portrait",
-          description: "Play a loud sound to locate phone",
-          iconColor: TOOL_COLORS.findPhone.icon,
-          iconBgColor: TOOL_COLORS.findPhone.bg,
-          screen: "FindPhone",
-        },
+
         {
           id: "share-location",
           name: "Share Location",
@@ -622,16 +611,6 @@ export default function ToolsScreen() {
         options={{
           headerShown: true,
           headerTitle: "Notes",
-          headerBackTitle: "Tools",
-          headerLargeTitle: false,
-        }}
-      />
-      <Stack.Screen
-        name="FindPhone"
-        component={FindPhoneScreen}
-        options={{
-          headerShown: true,
-          headerTitle: "Find Phone",
           headerBackTitle: "Tools",
           headerLargeTitle: false,
         }}

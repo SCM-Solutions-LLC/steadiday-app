@@ -156,15 +156,15 @@ export default function ConnectAppsHealthScreen({ navigation }: Props) {
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center flex-1">
-                    <View className="w-14 h-14 rounded-2xl items-center justify-center mr-4" style={{ backgroundColor: "#E5F4EF" }}>
-                      <Ionicons name={app.icon as any} size={28} color="#6DB193" />
+                    <View className="w-14 h-14 rounded-2xl items-center justify-center mr-4" style={{ backgroundColor: colors.primaryLight }}>
+                      <Ionicons name={app.icon as any} size={28} color={primary} />
                     </View>
                     <View className="flex-1">
                       <Text className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                         {app.name}
                       </Text>
                       {app.isConnected && (
-                        <Text className="text-base mt-1" style={{ color: "#6DB193" }}>
+                        <Text className="text-base mt-1" style={{ color: colors.success }}>
                           Connected
                         </Text>
                       )}

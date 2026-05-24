@@ -15,9 +15,9 @@
  */
 
 import * as AuthSession from "expo-auth-session";
-import { Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { Task } from "../types/app";
 import { logger } from "../utils/logger";
 
@@ -36,11 +36,11 @@ function ensureAuthSessionCompleted(): void {
 }
 
 // Google OAuth Configuration - uses environment variables
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "";
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || "";
 const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || "";
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || "";
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "";
 
-// Select the correct Google OAuth client ID for the current platform
+// Platform-specific client ID selection
 const GOOGLE_CLIENT_ID =
   Platform.OS === "android"
     ? GOOGLE_ANDROID_CLIENT_ID
@@ -50,11 +50,13 @@ const GOOGLE_CLIENT_ID =
 
 // Check if Google Calendar integration is properly configured
 export const isGoogleCalendarConfigured = (): boolean => {
-  return (
-    GOOGLE_CLIENT_ID !== "" &&
-    !GOOGLE_CLIENT_ID.includes("YOUR_") &&
-    GOOGLE_CLIENT_ID.endsWith(".apps.googleusercontent.com")
-  );
+  const PLACEHOLDER_PATTERNS = [
+    "YOUR_GOOGLE_CLIENT_ID_HERE",
+    "YOUR_IOS_CLIENT_ID",
+    "YOUR_ANDROID_CLIENT_ID",
+    "YOUR_WEB_CLIENT_ID",
+  ];
+  return GOOGLE_CLIENT_ID !== "" && !PLACEHOLDER_PATTERNS.some((p) => GOOGLE_CLIENT_ID.includes(p));
 };
 
 const GOOGLE_OAUTH_SCOPES = [

@@ -357,10 +357,10 @@ export function TaskFormModal({
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           className="flex-1"
         >
-          <Pressable className="flex-1" onPress={Keyboard.dismiss}>
             <View className="flex-1">
               {/* Modal Header */}
-              <View
+              <Pressable
+                onPress={Keyboard.dismiss}
                 className="px-6 py-4 border-b flex-row justify-between items-center"
                 style={{ borderBottomColor: colors.divider }}
               >
@@ -393,9 +393,9 @@ export function TaskFormModal({
                     Save
                   </Text>
                 </Pressable>
-              </View>
+              </Pressable>
 
-              <ScrollView className="flex-1 px-6 py-6">
+              <ScrollView className="flex-1 px-6 py-6" keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
                 {/* Repeating item helper text and actions (Part F) */}
                 {isRepeatingImport && (
                   <View className="mb-6">
@@ -1189,7 +1189,6 @@ export function TaskFormModal({
                 />
               </ScrollView>
             </View>
-          </Pressable>
         </KeyboardAvoidingView>
       </View>
     </Modal>

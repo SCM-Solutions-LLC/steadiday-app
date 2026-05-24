@@ -1,2 +1,1 @@
-/** Client authentication key for backend AI routes */
-export const APP_CLIENT_KEY = "steadiday-mobile-2026";
+export const APP_CLIENT_KEY = process.env.EXPO_PUBLIC_APP_CLIENT_KEY ?? "";

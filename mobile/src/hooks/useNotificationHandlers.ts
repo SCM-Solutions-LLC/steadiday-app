@@ -8,6 +8,8 @@ import {
 } from "../utils/notifications";
 import { logger } from "../utils/logger";
 import { useEngagementStore } from "../state/stores/engagementStore";
+import { useSafetySessionStore } from "../state/stores/safetySessionStore";
+import { acknowledgeFallAlert } from "../utils/backgroundWorkout";
 import { maybeRequestReview } from "../utils/reviewPrompt";
 import { Language } from "../types/app";
 
@@ -85,6 +87,10 @@ export function useNotificationHandlers({
         // Track engagement
         useEngagementStore.getState().incrementTasksCompleted();
         setTimeout(() => maybeRequestReview(), 2000);
+      } else if (actionIdentifier === "FALL_OK") {
+        // Cancel server-backed escalation and clear native pending flag
+        useSafetySessionStore.getState().cancelFallEscalation();
+        acknowledgeFallAlert();
       }
     });
 

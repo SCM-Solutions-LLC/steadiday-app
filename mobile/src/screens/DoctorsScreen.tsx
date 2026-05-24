@@ -233,8 +233,8 @@ export default function DoctorsScreen() {
               <View className="flex-row space-x-2">
                 <Pressable
                   onPress={() => handleCallDoctor(doctor.phoneNumber)}
-                  className="flex-1 bg-green-600 py-3 rounded-xl active:bg-green-700 flex-row items-center justify-center mr-2"
-                  style={{ minHeight: 48 }}
+                  className="flex-1 py-3 rounded-xl active:opacity-80 flex-row items-center justify-center mr-2"
+                  style={{ backgroundColor: colors.success, minHeight: 48 }}
                   accessibilityRole="button"
                   accessibilityLabel={`Call ${doctor.name}`}
                 >
@@ -255,13 +255,13 @@ export default function DoctorsScreen() {
 
                 <Pressable
                   onPress={() => handleDeleteDoctor(doctor)}
-                  className="flex-1 bg-red-50 py-3 rounded-xl active:bg-red-100 flex-row items-center justify-center"
-                  style={{ minHeight: 48 }}
+                  className="flex-1 py-3 rounded-xl active:opacity-80 flex-row items-center justify-center"
+                  style={{ backgroundColor: colors.errorBackground, minHeight: 48 }}
                   accessibilityRole="button"
                   accessibilityLabel="Delete doctor"
                 >
-                  <Ionicons name="trash-outline" size={18} color="#dc2626" />
-                  <Text className={`${textClasses.small} text-red-600 ml-2 font-semibold`}>Delete</Text>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                  <Text className={`${textClasses.small} ml-2 font-semibold`} style={{ color: colors.error }}>Delete</Text>
                 </Pressable>
               </View>
             </View>

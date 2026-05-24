@@ -45,7 +45,6 @@ export const ICON_COLORS_LIGHT = {
   notes: "#EC4899", // Pink
 
   // Tools sections - Phone Helpers
-  findPhone: "#EF4444", // Red
   shareLocation: "#10B981", // Emerald
   parking: "#8B5CF6", // Purple
 
@@ -104,7 +103,6 @@ export const ICON_COLORS_DARK = {
   notes: "#F472B6", // Pink (lighter)
 
   // Tools sections - Phone Helpers
-  findPhone: "#F87171", // Red (lighter)
   shareLocation: "#34D399", // Emerald (lighter)
   parking: "#A78BFA", // Purple (lighter)
 

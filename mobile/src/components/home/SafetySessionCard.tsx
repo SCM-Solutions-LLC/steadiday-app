@@ -96,6 +96,7 @@ export default function SafetySessionCard({
   const emergencyContacts = useUserStore(
     (s) => s.userProfile.emergencyContacts
   );
+  const userName = useUserStore((s) => s.userProfile.name);
   const hapticEnabled =
     useSettingsStore((s) => s.soundSettings?.hapticFeedbackEnabled) ?? true;
 
@@ -164,7 +165,7 @@ export default function SafetySessionCard({
       return;
     }
 
-    startSession();
+    startSession(userName || "", emergencyContacts || []);
   }, [
     hasSeenOnboarding,
     hasTrustedContact,
@@ -172,6 +173,8 @@ export default function SafetySessionCard({
     navigation,
     requestMotionPermissions,
     startSession,
+    userName,
+    emergencyContacts,
   ]);
 
   const handleEndSession = useCallback(() => {
@@ -222,8 +225,8 @@ export default function SafetySessionCard({
       return;
     }
 
-    startSession();
-  }, [hasTrustedContact, navigation, requestMotionPermissions, startSession]);
+    startSession(userName || "", emergencyContacts || []);
+  }, [hasTrustedContact, navigation, requestMotionPermissions, startSession, userName, emergencyContacts]);
 
   return (
     <>

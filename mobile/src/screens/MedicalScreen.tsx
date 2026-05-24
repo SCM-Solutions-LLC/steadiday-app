@@ -171,9 +171,9 @@ export default function MedicalScreen() {
                 <View className="flex-row items-center">
                   <View
                     className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                    style={{ backgroundColor: colors.success + "20" }}
+                    style={{ backgroundColor: colors.primaryLight }}
                   >
-                    <Ionicons name="people" size={22} color={colors.success} />
+                    <Ionicons name="people" size={22} color={primary} />
                   </View>
                   <Text style={{ fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>
                     My Doctors
@@ -182,10 +182,10 @@ export default function MedicalScreen() {
                 <Pressable
                   onPress={handleAddDoctor}
                   className="flex-row items-center px-4 py-2 rounded-full active:opacity-70"
-                  style={{ backgroundColor: colors.success + "20" }}
+                  style={{ backgroundColor: colors.primaryLight }}
                 >
-                  <Ionicons name="add" size={20} color={colors.success} />
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.success, marginLeft: 4 }}>Add</Text>
+                  <Ionicons name="add" size={20} color={primary} />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: primary, marginLeft: 4 }}>Add</Text>
                 </Pressable>
               </View>
 
@@ -262,7 +262,7 @@ export default function MedicalScreen() {
                       <Pressable
                         onPress={() => handleCallDoctor(doctor.phoneNumber)}
                         className="flex-1 py-3 rounded-xl active:opacity-80 flex-row items-center justify-center mr-2"
-                        style={{ backgroundColor: "#16a34a", minHeight: 44 }}
+                        style={{ backgroundColor: colors.success, minHeight: 44 }}
                       >
                         <Ionicons name="call" size={16} color="white" />
                         <Text className="text-white ml-2 font-semibold" style={{ fontSize: 14 }}>Call</Text>
@@ -278,10 +278,10 @@ export default function MedicalScreen() {
                       <Pressable
                         onPress={() => handleDeleteDoctor(doctor)}
                         className="flex-1 py-3 rounded-xl active:opacity-80 flex-row items-center justify-center"
-                        style={{ backgroundColor: "#fef2f2", minHeight: 44 }}
+                        style={{ backgroundColor: colors.errorBackground, minHeight: 44 }}
                       >
-                        <Ionicons name="trash-outline" size={16} color="#dc2626" />
-                        <Text className="ml-2 font-semibold" style={{ color: "#dc2626", fontSize: 14 }}>Delete</Text>
+                        <Ionicons name="trash-outline" size={16} color={colors.error} />
+                        <Text className="ml-2 font-semibold" style={{ color: colors.error, fontSize: 14 }}>Delete</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -399,10 +399,10 @@ export default function MedicalScreen() {
                         <Pressable
                           onPress={() => handleDeleteInsurance(card)}
                           className="flex-1 py-3 rounded-xl active:opacity-80 flex-row items-center justify-center"
-                          style={{ backgroundColor: "#fef2f2", minHeight: 44 }}
+                          style={{ backgroundColor: colors.errorBackground, minHeight: 44 }}
                         >
-                          <Ionicons name="trash-outline" size={16} color="#dc2626" />
-                          <Text className="ml-2 font-semibold" style={{ color: "#dc2626", fontSize: 14 }}>Delete</Text>
+                          <Ionicons name="trash-outline" size={16} color={colors.error} />
+                          <Text className="ml-2 font-semibold" style={{ color: colors.error, fontSize: 14 }}>Delete</Text>
                         </Pressable>
                       </View>
                     </View>

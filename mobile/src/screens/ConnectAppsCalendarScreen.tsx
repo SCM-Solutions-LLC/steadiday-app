@@ -74,7 +74,7 @@ export default function ConnectAppsCalendarScreen({ navigation }: Props) {
                         {app.name}
                       </Text>
                       {app.isConnected && (
-                        <Text className="text-base mt-1" style={{ color: "#6DB193" }}>
+                        <Text className="text-base mt-1" style={{ color: colors.success }}>
                           Connected
                         </Text>
                       )}

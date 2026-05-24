@@ -6,7 +6,7 @@ module.exports = ({ config }) => {
   if (!expoConfig.android) {
     expoConfig.android = {};
   }
-  expoConfig.android.googleServicesFile = "./google-services.json";
+  expoConfig.android.googleServicesFile = process.env.GOOGLE_SERVICES_JSON || "./google-services.json";
 
   return expoConfig;
 };

@@ -3,9 +3,29 @@
 .env.*
 !.env.example
 
-
 # OS
 .DS_Store
 
 # Dependencies
 node_modules/
+
+# Google service files — never commit
+mobile/GoogleService-Info.plist
+mobile/google-services.json
+**/GoogleService-Info.plist
+**/google-services.json
+
+# Service account keys
+*-service-account.json
+steadiday-service-account.json
+
+# Build artifacts
+*.aab
+*.ipa
+*.apk
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -13,7 +13,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Medication, MedicationFrequency, MedicationItem } from "../types/app";
 import { getTextSizeClasses } from "../utils/textSizes";
 import { useSettingsStore } from "../state/stores/settingsStore";
-import { analyzeImageWithAI } from "../api/chat-service";
 import { useTheme } from "../utils/useTheme";
 import { useMedicationForm } from "./medications/hooks";
 import {
@@ -25,7 +24,7 @@ import {
   RemindersSection,
 } from "./medications/forms";
 import { logger } from "../utils/logger";
-import { compressImageBase64 } from "../utils/imageCompression";
+import { extractMedicationFromPhoto, hasAnyExtractedField } from "../api/vision";
 import { useConfirmModal } from "./ConfirmModal";
 
 interface Props {
@@ -167,105 +166,47 @@ export default function AddMedicationModal({
     }
   };
 
-  const handleAnalyzePhoto = async (base64Image: string) => {
-    logger.log("[MedicationPhoto] Starting photo analysis...");
+  // Map an extracted free-text frequency phrase to the app's MedicationFrequency enum.
+  const mapFrequency = (raw: string | null): MedicationFrequency | null => {
+    if (!raw) return null;
+    const text = raw.toLowerCase();
+    if (/every other day|alternate days?/.test(text)) return "every-other-day";
+    if (/three (times|x)|3 (times|x)|every 4-?6 hours|every 4 hours|every 6 hours/.test(text)) return "three-times-daily";
+    if (/twice|two times|2 times|2x|every 12 hours/.test(text)) return "twice-daily";
+    if (/weekly|once a week/.test(text)) return "weekly";
+    return "daily";
+  };
+
+  const handleAnalyzePhoto = async (photoUri: string) => {
     updateField("isAnalyzingPhoto", true);
-
     try {
-      const compressed = await compressImageBase64(base64Image);
+      const data = await extractMedicationFromPhoto(photoUri);
 
-      const medicationPrompt = `You are a medication identification expert. Analyze this photo of medication packaging, bottle, box, or label.
-
-IMPORTANT: This can be either:
-- A PRESCRIPTION medication (Rx label with patient name, pharmacy info)
-- An OVER-THE-COUNTER (OTC) medication (brand name products like Tylenol, Advil, Tums, etc.)
-
-For OTC medications, look for:
-- Brand name (e.g., "Tylenol", "Advil", "Motrin", "Zyrtec", "Pepto-Bismol")
-- Active ingredient and strength (e.g., "Acetaminophen 500mg", "Ibuprofen 200mg")
-- The "Drug Facts" panel if visible
-
-For Prescription medications, look for:
-- Drug name on the pharmacy label
-- Dosage/strength information
-- Directions for use
-
-Extract and return ONLY valid JSON in this exact format:
-{"name": "medication name (use brand name if OTC, or drug name if prescription)", "dosage": "strength with units (e.g., 500mg, 200mg, 10mg)", "frequency": "daily"}
-
-For frequency, use one of: "daily", "twice-daily", "three-times-daily", "every-other-day", "weekly"
-- If directions say "every 4-6 hours" or similar, use "three-times-daily"
-- If directions say "twice a day" or "every 12 hours", use "twice-daily"
-- If no frequency visible, default to "daily"
-
-If you absolutely cannot identify ANY medication information, respond with:
-{"error": "Unable to identify medication"}
-
-Respond with ONLY the JSON, no other text.`;
-
-      logger.log("[MedicationPhoto] Sending to AI for analysis...");
-      const analysis = await analyzeImageWithAI(compressed, medicationPrompt, 30000);
-      logger.log("[MedicationPhoto] AI response received");
-
-      let cleanedContent = analysis.trim();
-      if (cleanedContent.startsWith("```")) {
-        cleanedContent = cleanedContent
-          .replace(/^```(?:json)?\n?/, "")
-          .replace(/\n?```$/, "")
-          .trim();
-      }
-
-      const data = JSON.parse(cleanedContent);
-
-      if (data.error) {
-        logger.log("[MedicationPhoto] AI could not identify medication");
+      if (!hasAnyExtractedField(data)) {
         alert(
-          "Unable to Identify Medication",
+          "Unable to Read Label",
           "Could not read the medication information from this photo. Please try again with a clearer image, or enter the details manually."
         );
-      } else {
-        let fieldsPopulated = false;
-
-        if (data.name) {
-          updateField("name", data.name);
-          fieldsPopulated = true;
-        }
-        if (data.dosage && data.dosage !== "not specified") {
-          updateField("dosage", data.dosage);
-          fieldsPopulated = true;
-        }
-        if (data.frequency) {
-          const freqMap: { [key: string]: MedicationFrequency } = {
-            daily: "daily",
-            "twice-daily": "twice-daily",
-            "three-times-daily": "three-times-daily",
-            "every-other-day": "every-other-day",
-            weekly: "weekly",
-          };
-          if (freqMap[data.frequency]) {
-            handleFrequencyChange(freqMap[data.frequency]);
-          }
-        }
-
-        if (fieldsPopulated) {
-          logger.log("[MedicationPhoto] Fields populated successfully");
-          alert(
-            "Medication Detected",
-            "Medication details have been filled in. Please review and adjust as needed."
-          );
-        } else {
-          logger.log("[MedicationPhoto] No fields extracted from response");
-          alert(
-            "Unable to Identify Medication",
-            "Could not read the medication information from this photo. Please try again with a clearer image, or enter the details manually."
-          );
-        }
+        return;
       }
+
+      // Apply only non-null, non-empty fields. Never write the string "null".
+      if (data.medication_name) updateField("name", data.medication_name);
+      if (data.dosage) updateField("dosage", data.dosage);
+      if (data.instructions) updateField("notes", data.instructions);
+
+      const mappedFrequency = mapFrequency(data.frequency);
+      if (mappedFrequency) handleFrequencyChange(mappedFrequency);
+
+      alert(
+        "Medication Detected",
+        "We filled in what we could read. Please review the details and tap Save when they look right."
+      );
     } catch (error) {
       logger.error("[MedicationPhoto] Photo analysis failed:", error instanceof Error ? error.message : "unknown");
       alert(
         "Photo Analysis Failed",
-        "Could not analyze the medication photo. Please check your internet connection and try again, or enter the details manually."
+        "We couldn't read this label clearly. You can fill in the details manually."
       );
     } finally {
       updateField("isAnalyzingPhoto", false);

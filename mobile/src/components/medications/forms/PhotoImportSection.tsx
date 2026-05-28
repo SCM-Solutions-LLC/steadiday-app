@@ -2,23 +2,8 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, ActivityIndicator, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PhotoImportSectionProps } from "../types";
-
-// PRIVACY: Delete a temp camera capture immediately after OCR processing.
-// Photos are never persisted — they exist only long enough to extract text.
-async function deleteTempPhoto(uri: string | undefined): Promise<void> {
-  if (!uri || !uri.startsWith("file://")) return;
-  try {
-    const info = await FileSystem.getInfoAsync(uri);
-    if (info.exists) {
-      await FileSystem.deleteAsync(uri, { idempotent: true });
-    }
-  } catch {
-    // Silent — best-effort cleanup
-  }
-}
 
 const PRIVACY_DISMISSED_KEY = "medication_privacy_dismissed";
 const SCAN_COUNT_KEY = "medication_scan_count";
@@ -61,28 +46,22 @@ export function PhotoImportSection({
   };
 
   const launchCamera = async () => {
-    let capturedUri: string | undefined;
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== "granted") {
-        // Permission denied - user will see system alert
-        return;
-      }
+      if (status !== "granted") return;
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        base64: true,
       });
 
-      if (!result.canceled && result.assets[0].base64) {
-        capturedUri = result.assets[0].uri;
-        await onAnalyzePhoto(result.assets[0].base64);
+      if (!result.canceled && result.assets[0].uri) {
+        // Parent (extractMedicationFromPhoto) is responsible for deleting the
+        // temp URI in a finally block — see src/api/vision.ts.
+        await onAnalyzePhoto(result.assets[0].uri);
       }
     } catch (error) {
       // Error handled by parent
-    } finally {
-      await deleteTempPhoto(capturedUri);
     }
   };
 
@@ -117,31 +96,22 @@ export function PhotoImportSection({
   };
 
   const handleImportPhoto = async () => {
-    let capturedUri: string | undefined;
     try {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        // Permission denied - user will see system alert
-        return;
-      }
+      if (status !== "granted") return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        base64: true,
       });
 
-      if (!result.canceled && result.assets[0].base64) {
-        capturedUri = result.assets[0].uri;
-        await onAnalyzePhoto(result.assets[0].base64);
+      if (!result.canceled && result.assets[0].uri) {
+        // Parent extractor handles preprocessing and temp-file deletion.
+        await onAnalyzePhoto(result.assets[0].uri);
       }
     } catch (error) {
       // Error handled by parent
-    } finally {
-      // Photo library URIs use ph:// scheme on iOS — deleteTempPhoto checks
-      // for file:// and no-ops otherwise, so this is safe for both sources.
-      await deleteTempPhoto(capturedUri);
     }
   };
 

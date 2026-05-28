@@ -66,8 +66,10 @@ export interface FormSectionProps {
 }
 
 // Photo import section specific props
+// Section captures the photo URI; the parent extracts via OpenAI Vision then
+// deletes the temp file. The section itself never persists any photo data.
 export interface PhotoImportSectionProps extends FormSectionProps {
-  onAnalyzePhoto: (base64Image: string) => Promise<void>;
+  onAnalyzePhoto: (photoUri: string) => Promise<void>;
 }
 
 // Frequency section specific props

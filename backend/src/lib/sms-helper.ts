@@ -57,7 +57,6 @@ export async function sendEmergencySMS(
           level: "error",
           service: "emergency-sms",
           event: "sms_send_failed",
-          contactName: contact.name,
           error: reason?.message || reason?.code,
         })
       );

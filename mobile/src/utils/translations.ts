@@ -31,7 +31,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Fall detection
     fallDetectionSetup: "Fall Detection",
     fallDetectionDescription: "Enable automatic fall detection for added safety. The app will alert your trusted contacts if a fall is detected.",
-    enableFallDetection: "Enable Fall Detection",
+    enableFallDetection: "Set Up Fall Detection",
     skipForNow: "Skip for now",
 
     // Home
@@ -66,7 +66,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "Detección de caídas",
     fallDetectionDescription: "Habilita la detección automática de caídas para mayor seguridad. La aplicación alertará a tu contacto de emergencia si se detecta una caída.",
-    enableFallDetection: "Habilitar detección de caídas",
+    enableFallDetection: "Configurar detección de caídas",
     skipForNow: "Omitir por ahora",
 
     home: "Inicio",
@@ -99,7 +99,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "跌倒检测",
     fallDetectionDescription: "启用自动跌倒检测以提高安全性。如果检测到跌倒，应用程序将通知您的紧急联系人。",
-    enableFallDetection: "启用跌倒检测",
+    enableFallDetection: "设置跌倒检测",
     skipForNow: "暂时跳过",
 
     home: "主页",
@@ -132,7 +132,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "Détection de chute",
     fallDetectionDescription: "Activez la détection automatique des chutes pour plus de sécurité. L'application alertera votre contact d'urgence si une chute est détectée.",
-    enableFallDetection: "Activer la détection de chute",
+    enableFallDetection: "Configurer la détection de chute",
     skipForNow: "Passer pour l'instant",
 
     home: "Accueil",
@@ -165,7 +165,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "Sturzerkennung",
     fallDetectionDescription: "Aktivieren Sie die automatische Sturzerkennung für zusätzliche Sicherheit. Die App benachrichtigt Ihren Notfallkontakt, wenn ein Sturz erkannt wird.",
-    enableFallDetection: "Sturzerkennung aktivieren",
+    enableFallDetection: "Sturzerkennung einrichten",
     skipForNow: "Vorerst überspringen",
 
     home: "Startseite",
@@ -198,7 +198,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "Rilevamento cadute",
     fallDetectionDescription: "Abilita il rilevamento automatico delle cadute per maggiore sicurezza. L'app avviserà il tuo contatto di emergenza se viene rilevata una caduta.",
-    enableFallDetection: "Abilita rilevamento cadute",
+    enableFallDetection: "Configura rilevamento cadute",
     skipForNow: "Salta per ora",
 
     home: "Home",
@@ -231,7 +231,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "Detecção de quedas",
     fallDetectionDescription: "Ative a detecção automática de quedas para maior segurança. O aplicativo alertará seu contato de emergência se uma queda for detectada.",
-    enableFallDetection: "Ativar detecção de quedas",
+    enableFallDetection: "Configurar detecção de quedas",
     skipForNow: "Pular por enquanto",
 
     home: "Início",
@@ -264,7 +264,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "転倒検知",
     fallDetectionDescription: "安全性を高めるために自動転倒検知を有効にします。転倒が検知された場合、アプリが緊急連絡先に通知します。",
-    enableFallDetection: "転倒検知を有効にする",
+    enableFallDetection: "転倒検知を設定する",
     skipForNow: "今はスキップ",
 
     home: "ホーム",
@@ -297,7 +297,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     fallDetectionSetup: "낙상 감지",
     fallDetectionDescription: "안전을 위해 자동 낙상 감지를 활성화합니다. 낙상이 감지되면 앱이 비상 연락처에 알립니다.",
-    enableFallDetection: "낙상 감지 활성화",
+    enableFallDetection: "낙상 감지 설정",
     skipForNow: "나중에 하기",
 
     home: "홈",
@@ -333,7 +333,7 @@ export const translations: Record<Language, Record<string, string>> = {
     // Fall detection
     fallDetectionSetup: "गिरने का पता लगाना",
     fallDetectionDescription: "अतिरिक्त सुरक्षा के लिए गिरने का अपने-आप पता लगाना चालू करें। गिरने का पता चलने पर ऐप आपके आपातकालीन संपर्क को सूचित करेगा।",
-    enableFallDetection: "गिरने का पता लगाना चालू करें",
+    enableFallDetection: "गिरने का पता लगाना सेट करें",
     skipForNow: "अभी छोड़ें",
 
     // Home

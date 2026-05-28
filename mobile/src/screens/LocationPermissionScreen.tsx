@@ -103,14 +103,14 @@ export default function LocationPermissionScreen({ navigation }: Props) {
         {/* Buttons */}
         <View className="mt-8 pt-4">
           <Button
-            title={permissionRequested ? "Continue" : "Enable Location"}
+            title={permissionRequested ? "Continue" : "Continue"}
             onPress={permissionRequested ? handleContinue : handleEnableLocation}
             variant="primary"
             size="large"
             fullWidth
             loading={isLoading}
             icon={!isLoading ? <Ionicons name={permissionRequested ? "arrow-forward" : "location"} size={28} color="white" /> : undefined}
-            accessibilityLabel={permissionRequested ? "Continue to next step" : "Enable location services"}
+            accessibilityLabel={permissionRequested ? "Continue to next step" : "Continue to enable location services"}
             style={{ marginBottom: 12 }}
           />
           {!permissionRequested && (

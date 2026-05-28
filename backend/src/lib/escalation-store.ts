@@ -1,11 +1,63 @@
 import { Database } from "bun:sqlite";
 import path from "path";
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 const DB_PATH = path.join(import.meta.dir, "../../data/escalation.db");
 
 // Ensure data directory exists
 import { mkdirSync } from "fs";
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
+
+// ---------------------------------------------------------------------------
+// Field-level encryption (AES-256-GCM) for user_name and contacts columns.
+// Key is loaded from DB_ENCRYPTION_KEY at module load; missing/malformed key
+// throws immediately so the process exits before serving any request.
+// ---------------------------------------------------------------------------
+const ENCRYPTION_VERSION = "v1";
+const ENCRYPTION_ALGORITHM = "aes-256-gcm";
+const IV_BYTES = 12;
+const AUTH_TAG_BYTES = 16;
+
+function loadEncryptionKey(): Buffer {
+  const raw = process.env.DB_ENCRYPTION_KEY;
+  if (!raw) {
+    throw new Error(
+      "DB_ENCRYPTION_KEY is required. Generate one with: openssl rand -hex 32"
+    );
+  }
+  if (!/^[0-9a-fA-F]{64}$/.test(raw)) {
+    throw new Error(
+      "DB_ENCRYPTION_KEY must be 64 hex characters (32 bytes / 256 bits). Generate one with: openssl rand -hex 32"
+    );
+  }
+  return Buffer.from(raw, "hex");
+}
+
+const ENCRYPTION_KEY = loadEncryptionKey();
+
+function encryptField(plaintext: string): string {
+  const iv = randomBytes(IV_BYTES);
+  const cipher = createCipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  const packed = Buffer.concat([iv, authTag, ciphertext]).toString("base64");
+  return `${ENCRYPTION_VERSION}:${packed}`;
+}
+
+function decryptField(stored: string): string {
+  // Transparent passthrough for rows written before encryption was added.
+  // Such rows expire via the 24h cleanup; no auto-rewrite on read.
+  if (!stored.startsWith(`${ENCRYPTION_VERSION}:`)) {
+    return stored;
+  }
+  const packed = Buffer.from(stored.slice(ENCRYPTION_VERSION.length + 1), "base64");
+  const iv = packed.subarray(0, IV_BYTES);
+  const authTag = packed.subarray(IV_BYTES, IV_BYTES + AUTH_TAG_BYTES);
+  const ciphertext = packed.subarray(IV_BYTES + AUTH_TAG_BYTES);
+  const decipher = createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+  decipher.setAuthTag(authTag);
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
+}
 
 const db = new Database(DB_PATH, { create: true });
 
@@ -160,8 +212,8 @@ export function registerSession(
 ): void {
   stmts.upsertSession.run(
     sessionId,
-    userName,
-    JSON.stringify(contacts),
+    encryptField(userName),
+    encryptField(JSON.stringify(contacts)),
     Date.now()
   );
 }
@@ -171,8 +223,8 @@ export function getSession(sessionId: string): EscalationSession | null {
   if (!row) return null;
   return {
     sessionId: row.session_id,
-    userName: row.user_name,
-    contacts: JSON.parse(row.contacts),
+    userName: decryptField(row.user_name),
+    contacts: JSON.parse(decryptField(row.contacts)),
     createdAt: row.created_at,
     endedAt: row.ended_at,
   };
@@ -245,8 +297,8 @@ export function getPendingPastDeadline(): PendingEscalationWithSession[] {
   const rows = stmts.getPendingPastDeadline.all(now) as any[];
   return rows.map((row) => ({
     escalation: rowToEscalation(row),
-    userName: row.user_name,
-    contacts: JSON.parse(row.session_contacts),
+    userName: decryptField(row.user_name),
+    contacts: JSON.parse(decryptField(row.session_contacts)),
   }));
 }
 

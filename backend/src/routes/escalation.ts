@@ -76,7 +76,7 @@ escalationRouter.post("/register-session", async (c) => {
 
   try {
     registerSession(sessionId, userName, contacts);
-    log("info", "session_registered", { ip, sessionId, userName, contactCount: contacts.length });
+    log("info", "session_registered", { ip, sessionId, contactCount: contacts.length });
     return c.json({ success: true, sessionId });
   } catch (err: any) {
     log("error", "session_register_failed", { ip, sessionId, error: err?.message });

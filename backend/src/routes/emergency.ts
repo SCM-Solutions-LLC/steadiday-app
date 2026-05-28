@@ -100,10 +100,10 @@ emergencyRouter.post("/sms", async (c) => {
         to: contactPhone,
       });
 
-      logEmergency("info", "opt_in_sent", { ip, userName, contactName: contactName || "contact" });
+      logEmergency("info", "opt_in_sent", { ip });
       return c.json({ success: true, message: "Opt-in confirmation sent" });
     } catch (error: any) {
-      logEmergency("error", "opt_in_failed", { ip, userName, contactName: contactName || "contact", error: error?.message });
+      logEmergency("error", "opt_in_failed", { ip, error: error?.message });
       return c.json({ success: false, error: "Could not send confirmation" }, 500);
     }
   }
@@ -111,18 +111,18 @@ emergencyRouter.post("/sms", async (c) => {
   // Handle emergency SMS (existing behavior)
   const { userName, contacts, latitude, longitude } = parsed.data;
   if (!contacts || contacts.length === 0 || latitude === undefined || longitude === undefined) {
-    logEmergency("warn", "missing_emergency_fields", { ip, userName });
+    logEmergency("warn", "missing_emergency_fields", { ip });
     return c.json({ error: "contacts, latitude, and longitude are required for emergency action" }, 400);
   }
 
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-    logEmergency("error", "twilio_not_configured", { ip, userName });
+    logEmergency("error", "twilio_not_configured", { ip });
     return c.json({ success: false, error: "SMS service not configured", reason: "twilio_not_configured", contacts: contacts.map(c => ({ name: c.name, status: "failed" as const })) }, 503);
   }
 
   try {
     const result = await sendEmergencySMS(userName, contacts, latitude, longitude);
-    logEmergency("info", "emergency_sms_complete", { ip, userName, contactCount: contacts.length, sent: result.sent, failed: result.failed });
+    logEmergency("info", "emergency_sms_complete", { ip, contactCount: contacts.length, sent: result.sent, failed: result.failed });
     return c.json({
       success: result.sent > 0,
       sent: result.sent,
@@ -130,7 +130,7 @@ emergencyRouter.post("/sms", async (c) => {
       contacts: result.contacts,
     });
   } catch (error: any) {
-    logEmergency("error", "emergency_sms_error", { ip, userName, error: error?.message });
+    logEmergency("error", "emergency_sms_error", { ip, error: error?.message });
     return c.json({ success: false, error: "Failed to send emergency SMS", reason: "send_error", contacts: contacts.map(c => ({ name: c.name, status: "failed" as const })) }, 500);
   }
 });

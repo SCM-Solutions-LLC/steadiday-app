@@ -55,12 +55,14 @@ export const callOpenAI = async (
  * @param base64Image - The base64 encoded image string
  * @param prompt - The prompt/question about the image
  * @param timeoutMs - Optional timeout in milliseconds (default: 30000)
+ * @param options - Optional model selection and detail level
  * @returns The AI's analysis of the image
  */
 export const analyzeImageWithAI = async (
   base64Image: string,
   prompt: string,
-  timeoutMs: number = 30000
+  timeoutMs: number = 30000,
+  options?: { model?: string; detail?: "high" | "low" | "auto" }
 ): Promise<string> => {
   try {
     const response = await fetch(`${config.apiBaseUrl}/api/ai/image/analyze`, {
@@ -69,7 +71,13 @@ export const analyzeImageWithAI = async (
         "Content-Type": "application/json",
         "X-App-Key": APP_CLIENT_KEY,
       },
-      body: JSON.stringify({ base64Image, prompt, timeoutMs }),
+      body: JSON.stringify({
+        base64Image,
+        prompt,
+        timeoutMs,
+        model: options?.model,
+        detail: options?.detail,
+      }),
     });
 
     if (!response.ok) {

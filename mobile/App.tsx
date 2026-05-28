@@ -11,7 +11,7 @@ import { useTaskStore } from "./src/state/stores/taskStore";
 import { useMedicationStore } from "./src/state/stores/medicationStore";
 import { useSubscriptionStore } from "./src/state/stores/subscriptionStore";
 import { ESSENTIALS_LIMITS } from "./src/config/featureAccess";
-import { View, ActivityIndicator, Text, ScrollView, Pressable } from "react-native";
+import { View, ActivityIndicator, Text, ScrollView, Pressable, AppState as RNAppState } from "react-native";
 import PinLockScreen from "./src/components/PinLockScreen";
 import EmailVerificationHandler from "./src/components/EmailVerificationHandler";
 import { ConfirmModalProvider } from "./src/components/ConfirmModal";
@@ -36,7 +36,11 @@ import {
 } from "./src/utils/notifications";
 import { recordError } from "./src/utils/firebase";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
-import { migrateLocalDataToSupabase } from "./src/lib/supabaseMigration";
+import { migrateLocalDataToSupabase, pushLocalDataToSupabase } from "./src/lib/supabaseMigration";
+import { syncDailyActivitySummary } from "./src/services/activitySync";
+import { drainSyncQueue, registerSyncQueueDrain } from "./src/services/syncService";
+import { googleCalendarService } from "./src/sync/googleCalendarSync";
+import { useIntegrationsStore } from "./src/state/stores/integrationsStore";
 
 // =============================================================================
 // GLOBAL ERROR HANDLER - Prevents crashes from unhandled JS exceptions
@@ -293,6 +297,29 @@ export default function App() {
     initAndVerify();
     setIsReady(true);
 
+    // Reconcile Google Calendar connection state with SecureStore.
+    // The Zustand flag is persisted but the singleton's in-memory state is
+    // not, so on a cold start we ask the service to read SecureStore and
+    // then mirror the result into the integrations store. Prevents drift
+    // after a reinstall, manual SecureStore wipe, or refresh-token failure.
+    googleCalendarService
+      .initialize()
+      .then((connected) => {
+        const store = useIntegrationsStore.getState();
+        const storeSaysConnected = store.integrations.find(
+          (i) => i.id === "google-calendar"
+        )?.isConnected ?? false;
+        if (connected !== storeSaysConnected) {
+          store.setGoogleCalendarConnected(
+            connected,
+            connected ? googleCalendarService.getUserEmail() : null
+          );
+        }
+      })
+      .catch((error) => {
+        logger.error("[App] Google Calendar reconciliation failed:", error);
+      });
+
     // Perform two-way calendar sync if enabled
     if (calendarSyncEnabled) {
       logger.log("[App] Performing initial two-way sync...");
@@ -353,13 +380,39 @@ export default function App() {
 
 function SupabaseMigrationRunner() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
+  // One-time migration + initial bulk push when a user first appears.
   useEffect(() => {
-    if (!user?.id) return;
-    migrateLocalDataToSupabase(user.id).catch((error) => {
-      logger.error("[App] Supabase migration failed:", error);
+    if (!userId) return;
+    (async () => {
+      try {
+        await migrateLocalDataToSupabase(userId);
+        await pushLocalDataToSupabase(userId);
+      } catch (error) {
+        logger.error("[App] Supabase initial sync failed:", error);
+      }
+    })();
+  }, [userId]);
+
+  // Activity summary on every foreground while signed in.
+  useEffect(() => {
+    if (!userId) return;
+    syncDailyActivitySummary(userId);
+    const subscription = RNAppState.addEventListener("change", (next) => {
+      if (next === "active") syncDailyActivitySummary(userId);
     });
-  }, [user?.id]);
+    return () => subscription.remove();
+  }, [userId]);
+
+  // Drain offline queue on network reconnect + once on startup.
+  useEffect(() => {
+    drainSyncQueue();
+    const unsubscribe = registerSyncQueueDrain();
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
 
   return null;
 }

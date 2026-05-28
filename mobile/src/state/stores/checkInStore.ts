@@ -3,6 +3,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 
+import { syncCheckInUpsert } from "../../services/storeSync";
+
 // ============================================================================
 // CHECK-IN STORE
 // Manages daily emotional check-in state with history support
@@ -103,22 +105,25 @@ export const useCheckInStore = create<CheckInStore>()(
       completeCheckIn: (value: CheckInValue, reason?: string) => {
         const today = getTodayStr();
         const now = Date.now();
+        const entry: CheckInEntry = {
+          value,
+          skipped: false,
+          updatedAt: now,
+          reason: reason?.trim() || undefined,
+        };
 
         set((state) => ({
           checkInsByDate: {
             ...state.checkInsByDate,
-            [today]: {
-              value,
-              skipped: false,
-              updatedAt: now,
-              reason: reason?.trim() || undefined,
-            },
+            [today]: entry,
           },
           // Also update legacy fields for backward compatibility
           lastCheckInDate: today,
           lastCheckInValue: value,
           lastCheckInAt: now,
         }));
+
+        syncCheckInUpsert(today, entry);
       },
 
       skipCheckInToday: () => {
@@ -168,19 +173,21 @@ export const useCheckInStore = create<CheckInStore>()(
 
         // Only allow editing if there's already an entry for today
         if (checkInsByDate[today]) {
+          const entry: CheckInEntry = {
+            value,
+            skipped: false,
+            updatedAt: Date.now(),
+            reason: reason?.trim() || undefined,
+          };
           set((state) => ({
             checkInsByDate: {
               ...state.checkInsByDate,
-              [today]: {
-                value,
-                skipped: false,
-                updatedAt: Date.now(),
-                reason: reason?.trim() || undefined,
-              },
+              [today]: entry,
             },
             lastCheckInValue: value,
             lastCheckInAt: Date.now(),
           }));
+          syncCheckInUpsert(today, entry);
         }
       },
 

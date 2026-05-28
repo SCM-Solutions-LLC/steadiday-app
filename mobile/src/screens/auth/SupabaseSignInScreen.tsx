@@ -18,7 +18,7 @@ type Props = {
 export default function SupabaseSignInScreen({ navigation }: Props) {
   const { colors, primary, isDark } = useTheme();
   const { alert } = useConfirmModal();
-  const { signInWithEmail, signInWithAppleIdToken, isConfigured } = useAuth();
+  const { signInWithEmail, signInWithAppleIdToken, signInWithGoogle, isConfigured } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +39,17 @@ export default function SupabaseSignInScreen({ navigation }: Props) {
     }
     setSubmitting(true);
     const { error } = await signInWithEmail(email.trim().toLowerCase(), password);
+    setSubmitting(false);
+    if (error) {
+      alert("Sign in failed", error);
+      return;
+    }
+    navigation.goBack();
+  };
+
+  const handleGoogleSignIn = async () => {
+    setSubmitting(true);
+    const { error } = await signInWithGoogle();
     setSubmitting(false);
     if (error) {
       alert("Sign in failed", error);
@@ -212,6 +223,30 @@ export default function SupabaseSignInScreen({ navigation }: Props) {
           />
         </View>
       )}
+
+      <Pressable
+        onPress={handleGoogleSignIn}
+        disabled={!isConfigured || submitting}
+        style={{
+          marginTop: 12,
+          height: 56,
+          borderRadius: 28,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.cardBackground,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: isConfigured && !submitting ? 1 : 0.5,
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Sign in with Google"
+      >
+        <Ionicons name="logo-google" size={22} color={colors.textPrimary} style={{ marginRight: 10 }} />
+        <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: "600" }}>
+          Sign in with Google
+        </Text>
+      </Pressable>
 
       <View
         style={{

@@ -48,19 +48,17 @@ export function PhotoImportSection({
   const launchCamera = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== "granted") {
-        // Permission denied - user will see system alert
-        return;
-      }
+      if (status !== "granted") return;
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        base64: true,
       });
 
-      if (!result.canceled && result.assets[0].base64) {
-        await onAnalyzePhoto(result.assets[0].base64);
+      if (!result.canceled && result.assets[0].uri) {
+        // Parent (extractMedicationFromPhoto) is responsible for deleting the
+        // temp URI in a finally block — see src/api/vision.ts.
+        await onAnalyzePhoto(result.assets[0].uri);
       }
     } catch (error) {
       // Error handled by parent
@@ -101,19 +99,16 @@ export function PhotoImportSection({
     try {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        // Permission denied - user will see system alert
-        return;
-      }
+      if (status !== "granted") return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        base64: true,
       });
 
-      if (!result.canceled && result.assets[0].base64) {
-        await onAnalyzePhoto(result.assets[0].base64);
+      if (!result.canceled && result.assets[0].uri) {
+        // Parent extractor handles preprocessing and temp-file deletion.
+        await onAnalyzePhoto(result.assets[0].uri);
       }
     } catch (error) {
       // Error handled by parent

@@ -5,6 +5,7 @@ import type { TaskInstanceCompletion, CalendarException, TaskSeries } from "../.
 import { parseInstanceId } from "../../utils/taskInstances";
 import { format, parseISO, startOfDay, subDays } from "date-fns";
 import { secureWarn } from "../../utils/secureLogger";
+import { syncTaskCompletionUpsert } from "../../services/storeSync";
 
 // ============================================================================
 // TASK INSTANCE COMPLETION STORE
@@ -133,6 +134,8 @@ export const useTaskInstanceStore = create<TaskInstanceStore>()(
             [instanceId]: completion,
           },
         }));
+
+        syncTaskCompletionUpsert(completion);
       },
 
       uncompleteInstance: (instanceId) => {

@@ -27,7 +27,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { extractInsuranceData } from "../utils/insuranceOcr";
 import { commonInsuranceProviders } from "../utils/insuranceData";
-import { analyzeImageWithAI } from "../api/chat-service";
+import { extractInsuranceFromPhoto, hasAnyExtractedField } from "../api/vision";
 import * as FileSystem from 'expo-file-system/legacy';
 import { fuzzyFilterStrings } from "../utils/fuzzySearch";
 import { useConfirmModal } from "./ConfirmModal";
@@ -232,84 +232,48 @@ export default function AddInsuranceModal({ visible, onClose, editingCard }: Add
   const processOcr = async (imageUri: string) => {
     setIsProcessingOcr(true);
     try {
-      // Convert image to base64
-      const base64 = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Caller (this component) manages the source URI lifecycle and deletes
+      // it in the finally block below, so we tell the extractor to skip it.
+      // The Vision extractor owns deletion of imageUri (its `finally` block
+       // always runs). The modal's own finally below clears the preview state
+       // and idempotent-deletes the same file as a defensive second pass.
+      const data = await extractInsuranceFromPhoto(imageUri);
 
-      // Use AI to extract insurance information
-      const analysis = await analyzeImageWithAI(
-        base64,
-        "Analyze this insurance card image and extract: 1) Provider/Insurance Company Name, 2) Member ID, 3) Group Number, 4) Policy Holder Name. Respond in JSON format: {\"providerName\": \"...\", \"memberId\": \"...\", \"groupNumber\": \"...\", \"policyHolder\": \"...\"}. If you cannot read a field, omit it from the response. If you cannot identify this as an insurance card, respond with {\"error\": \"Not an insurance card\"}."
-      );
-
-      // Parse the response
-      try {
-        // Clean the response - remove markdown code blocks if present
-        let cleanedContent = analysis.trim();
-
-        // Remove markdown code block formatting if present
-        if (cleanedContent.startsWith("```")) {
-          cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-        }
-
-        const data = JSON.parse(cleanedContent);
-        if (data.error) {
-          alert(
-            "Unable to Read Card",
-            "Could not identify this as an insurance card. Please enter the information manually."
-          );
-        } else {
-          // Check if any useful data was extracted
-          const hasExtractedData = data.providerName || data.memberId || data.groupNumber || data.policyHolder;
-
-          if (hasExtractedData) {
-            // Auto-fill fields with extracted data
-            if (data.providerName) setProviderName(data.providerName);
-            if (data.memberId) setMemberId(data.memberId);
-            if (data.groupNumber) setGroupNumber(data.groupNumber);
-            if (data.policyHolder) setPolicyHolder(data.policyHolder);
-
-            alert(
-              "Card Information Detected",
-              "Insurance card fields have been filled. Please review and adjust as needed."
-            );
-          } else {
-            alert(
-              "Unable to Read Card",
-              "Could not read the insurance card information from this photo. Please try again with a clearer image, or enter the details manually."
-            );
-          }
-        }
-      } catch (e) {
-        // Fallback to old OCR method
+      if (!hasAnyExtractedField(data)) {
+        // Last-resort fallback to legacy on-device OCR
         try {
           const extracted = await extractInsuranceData(imageUri);
-          const hasExtractedData = extracted.providerName || extracted.memberId || extracted.groupNumber || extracted.policyHolder;
+          if (extracted.providerName) setProviderName(extracted.providerName);
+          if (extracted.memberId) setMemberId(extracted.memberId);
+          if (extracted.groupNumber) setGroupNumber(extracted.groupNumber);
+          if (extracted.policyHolder) setPolicyHolder(extracted.policyHolder);
 
-          if (hasExtractedData) {
-            if (extracted.providerName) setProviderName(extracted.providerName);
-            if (extracted.memberId) setMemberId(extracted.memberId);
-            if (extracted.groupNumber) setGroupNumber(extracted.groupNumber);
-            if (extracted.policyHolder) setPolicyHolder(extracted.policyHolder);
-
-            alert(
-              "Card Information Detected",
-              "Insurance card fields have been filled. Please review and adjust as needed."
-            );
-          } else {
-            alert(
-              "Unable to Read Card",
-              "Could not read the insurance card information from this photo. Please try again with a clearer image, or enter the details manually."
-            );
-          }
+          const fallbackUseful = extracted.providerName || extracted.memberId || extracted.groupNumber || extracted.policyHolder;
+          alert(
+            fallbackUseful ? "Card Information Detected" : "Unable to Read Card",
+            fallbackUseful
+              ? "Insurance card fields have been filled. Please review and adjust as needed."
+              : "We couldn't read this card clearly. You can fill in the details manually."
+          );
         } catch (fallbackError) {
           logger.error("Fallback OCR also failed:", fallbackError);
           alert(
             "Unable to Read Card",
-            "Could not read the insurance card information from this photo. Please try again with a clearer image, or enter the details manually."
+            "We couldn't read this card clearly. You can fill in the details manually."
           );
         }
+      } else {
+        // Apply only non-null values. Never write the string "null".
+        if (data.insurance_company) setProviderName(data.insurance_company);
+        else if (data.plan_name) setProviderName(data.plan_name);
+        if (data.member_id) setMemberId(data.member_id);
+        if (data.group_number) setGroupNumber(data.group_number);
+        if (data.member_name) setPolicyHolder(data.member_name);
+
+        alert(
+          "Card Information Detected",
+          "We filled in what we could read. Please review the details and tap Save when they look right."
+        );
       }
     } catch (error) {
       logger.error("OCR processing error:", error);

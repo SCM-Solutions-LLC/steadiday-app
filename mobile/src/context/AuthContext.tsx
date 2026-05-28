@@ -1,4 +1,6 @@
 import { Session, User } from "@supabase/supabase-js";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 import React, {
   createContext,
   useCallback,
@@ -9,7 +11,10 @@ import React, {
 } from "react";
 
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { setSyncUserId } from "../services/storeSync";
 import { logger } from "../utils/logger";
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface AuthContextType {
   session: Session | null;
@@ -29,6 +34,7 @@ interface AuthContextType {
     identityToken: string,
     fullName?: string
   ) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   sendPasswordReset: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -42,6 +48,7 @@ const AuthContext = createContext<AuthContextType>({
   signInWithEmail: async () => ({ error: "Auth not configured" }),
   signUpWithEmail: async () => ({ error: "Auth not configured" }),
   signInWithAppleIdToken: async () => ({ error: "Auth not configured" }),
+  signInWithGoogle: async () => ({ error: "Auth not configured" }),
   sendPasswordReset: async () => ({ error: "Auth not configured" }),
   signOut: async () => {},
   refreshSession: async () => {},
@@ -67,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         if (error) logger.error("[AuthContext] getSession error:", error.message);
         setSession(data.session ?? null);
+        setSyncUserId(data.session?.user?.id ?? null);
       })
       .catch((error) => {
         logger.error("[AuthContext] getSession threw:", error);
@@ -80,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
+      setSyncUserId(nextSession?.user?.id ?? null);
     });
 
     return () => {
@@ -124,6 +133,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) return { error: "Sign-in is not available yet." };
+    try {
+      const redirectTo = AuthSession.makeRedirectUri({
+        scheme: "steadiday",
+        path: "auth/callback",
+      });
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          scopes: "email profile",
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) return { error: error.message };
+      if (!data.url) return { error: "Google did not return an OAuth URL." };
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type !== "success" || !result.url) {
+        return { error: result.type === "cancel" ? "" : "Sign-in did not complete." };
+      }
+
+      // Supabase returns tokens in the URL hash fragment.
+      const url = new URL(result.url);
+      const params = new URLSearchParams(
+        url.hash.startsWith("#") ? url.hash.slice(1) : url.search.slice(1)
+      );
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+      if (!accessToken) {
+        return { error: "Google did not return an access token." };
+      }
+
+      const { error: setError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken ?? "",
+      });
+      return { error: setError?.message ?? null };
+    } catch (error) {
+      logger.error("[AuthContext] Google sign-in threw:", error);
+      return { error: "Could not sign in with Google." };
+    }
+  }, []);
+
   const sendPasswordReset = useCallback(async (email: string) => {
     if (!isSupabaseConfigured)
       return { error: "Password reset is not available yet." };
@@ -153,6 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithEmail,
       signUpWithEmail,
       signInWithAppleIdToken,
+      signInWithGoogle,
       sendPasswordReset,
       signOut,
       refreshSession,
@@ -163,6 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithEmail,
       signUpWithEmail,
       signInWithAppleIdToken,
+      signInWithGoogle,
       sendPasswordReset,
       signOut,
       refreshSession,

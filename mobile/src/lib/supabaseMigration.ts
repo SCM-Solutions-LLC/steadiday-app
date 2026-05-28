@@ -1,9 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { useCheckInStore } from "../state/stores/checkInStore";
+import { useMedicationStore } from "../state/stores/medicationStore";
+import { useTaskInstanceStore } from "../state/stores/taskInstanceStore";
+import { useTaskStore } from "../state/stores/taskStore";
 import { logger } from "../utils/logger";
-import { supabase } from "./supabase";
+import {
+  toCloudCheckIn,
+  toCloudMedication,
+  toCloudMedicationLog,
+  toCloudTask,
+  toCloudTaskCompletion,
+} from "./syncPayloads";
+import { isSupabaseConfigured, supabase } from "./supabase";
 
 const MIGRATION_FLAG_KEY = "supabase_migration_complete_v1";
+const INITIAL_PUSH_FLAG_KEY = "supabase_initial_push_complete_v1";
+const FIRST_OPEN_KEY = "steadiday_first_open_date";
 
 /**
  * Zustand-persisted store keys we currently snapshot to the cloud on first
@@ -102,4 +115,127 @@ export async function migrateLocalDataToSupabase(userId: string): Promise<void> 
   } catch (error) {
     logger.error("[supabaseMigration] Migration threw:", error);
   }
+}
+
+/**
+ * Read each in-scope Zustand store and batch-insert the records into their
+ * dedicated Supabase tables. Idempotent via INITIAL_PUSH_FLAG_KEY — the flag
+ * is only set on full success so partial pushes will be retried.
+ *
+ * Privacy: photo/image/scan fields are stripped by syncPayloads' allow-list
+ * before any data leaves the device.
+ */
+export async function pushLocalDataToSupabase(userId: string): Promise<void> {
+  if (!isSupabaseConfigured || !userId) return;
+  if ((await AsyncStorage.getItem(INITIAL_PUSH_FLAG_KEY)) === "true") return;
+
+  const errors: unknown[] = [];
+
+  // member_since from FIRST_OPEN_KEY (stored as ISO string)
+  try {
+    const firstOpen = await AsyncStorage.getItem(FIRST_OPEN_KEY);
+    if (firstOpen) {
+      const iso = isoFromMaybeTimestamp(firstOpen);
+      if (iso) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ member_since: iso })
+          .eq("id", userId);
+        if (error) errors.push(error);
+      }
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  // Tasks
+  try {
+    const tasks = useTaskStore.getState().tasks;
+    if (tasks.length > 0) {
+      const rows = tasks.map((t) => toCloudTask(t, userId));
+      const { error } = await supabase.from("tasks").upsert(rows);
+      if (error) errors.push(error);
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  // Task completions
+  try {
+    const completions = Object.values(
+      useTaskInstanceStore.getState().completions
+    );
+    if (completions.length > 0) {
+      const rows = completions.map((c) => toCloudTaskCompletion(c, userId));
+      const { error } = await supabase
+        .from("task_completions")
+        .upsert(rows, { onConflict: "task_id,completed_date" });
+      if (error) errors.push(error);
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  // Medications (photo fields stripped by toCloudMedication's allow-list)
+  try {
+    const meds = useMedicationStore.getState().medications;
+    if (meds.length > 0) {
+      const rows = meds.map((m) => toCloudMedication(m, userId));
+      const { error } = await supabase.from("medications").upsert(rows);
+      if (error) errors.push(error);
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  // Medication logs
+  try {
+    const logs = useMedicationStore.getState().medicationLogs;
+    if (logs.length > 0) {
+      const rows = logs.map((l) => toCloudMedicationLog(l, userId));
+      const { error } = await supabase.from("medication_logs").upsert(rows);
+      if (error) errors.push(error);
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  // Check-ins
+  try {
+    const byDate = useCheckInStore.getState().checkInsByDate;
+    const rows = Object.entries(byDate)
+      .map(([date, entry]) => toCloudCheckIn(date, entry, userId))
+      .filter((row): row is Record<string, unknown> => row !== null);
+    if (rows.length > 0) {
+      const { error } = await supabase
+        .from("check_ins")
+        .upsert(rows, { onConflict: "user_id,check_in_date" });
+      if (error) errors.push(error);
+    }
+  } catch (error) {
+    errors.push(error);
+  }
+
+  if (errors.length === 0) {
+    try {
+      await AsyncStorage.setItem(INITIAL_PUSH_FLAG_KEY, "true");
+    } catch (error) {
+      logger.error("[supabaseMigration] Failed to set push flag:", error);
+    }
+  } else {
+    logger.warn(
+      `[supabaseMigration] Initial push had ${errors.length} error(s) — will retry next sign-in.`,
+      errors
+    );
+  }
+}
+
+function isoFromMaybeTimestamp(value: string): string | null {
+  const trimmed = value.trim();
+  if (/^\d+$/.test(trimmed)) {
+    const ms = Number(trimmed);
+    if (Number.isFinite(ms)) return new Date(ms).toISOString();
+  }
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }

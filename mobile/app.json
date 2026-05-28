@@ -27,6 +27,13 @@
         "NSContactsUsageDescription": "SteadiDay accesses your contacts to help you find people you already know inside the app.",
         "NSCalendarsUsageDescription": "SteadiDay uses your calendar to place app events onto your device schedule.",
         "NSMotionUsageDescription": "SteadiDay uses motion data to run movement-based features you enable in the app.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.942738976594-divmvdbj51ne6cisa23aq0q49nm2nooa"
+            ]
+          }
+        ],
         "UIBackgroundModes": [
           "remote-notification",
           "remote-notification"

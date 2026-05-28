@@ -2,7 +2,7 @@ import { NativeModules, NativeEventEmitter, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { logger } from "./logger";
 
-// iOS: BackgroundWorkoutModule (CMMotionManager + HKWorkoutSession)
+// iOS: BackgroundWorkoutModule (CMMotionManager + CLLocationManager background updates)
 let BackgroundWorkoutModule: any = null;
 try {
   if (Platform.OS === "ios") {
@@ -97,7 +97,7 @@ export async function startBackgroundWorkout(): Promise<boolean> {
       try {
         await BackgroundWorkoutModule.requestAuthorization();
       } catch {
-        // HealthKit auth denied or unavailable — continue anyway
+        // Location auth denied or unavailable — continue anyway
       }
       return await BackgroundWorkoutModule.startSession();
     } catch {

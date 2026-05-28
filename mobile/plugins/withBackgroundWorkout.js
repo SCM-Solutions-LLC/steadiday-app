@@ -9,15 +9,13 @@ const fs = require("fs");
 const path = require("path");
 
 // ---------------------------------------------------------------------------
-// iOS: Swift native module — HKWorkoutSession + CMMotionManager fall detection
+// iOS: Swift native module — CLLocationManager + CMMotionManager fall detection
 // ---------------------------------------------------------------------------
 // Uses CMDeviceMotion.userAcceleration (gravity-subtracted, values in Gs)
 // which matches expo-sensors DeviceMotion.acceleration used in JS.
-// HKWorkoutSession (iOS 26+) keeps the process alive in background.
-// CMMotionManager works on all iOS versions for foreground detection and
-// continues in background when HKWorkoutSession is active.
+// CLLocationManager with allowsBackgroundLocationUpdates keeps the process
+// alive in background so CMMotionManager continues delivering readings.
 const SWIFT_MODULE = `import Foundation
-import HealthKit
 import CoreMotion
 import CoreLocation
 import UserNotifications
@@ -26,8 +24,8 @@ import React
 @objc(BackgroundWorkoutModule)
 class BackgroundWorkoutModule: RCTEventEmitter, UNUserNotificationCenterDelegate, CLLocationManagerDelegate {
 
-  private var healthStore: HKHealthStore?
-  private var workoutSession: Any?
+  // Background keep-alive: continuous location updates
+  private var backgroundLocationActive = false
 
   // CoreMotion fall detection
   private var motionManager: CMMotionManager?
@@ -91,30 +89,19 @@ class BackgroundWorkoutModule: RCTEventEmitter, UNUserNotificationCenterDelegate
     }
   }
 
-  // MARK: - HealthKit Authorization
+  // MARK: - Location Authorization
 
   @objc func requestAuthorization(
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    guard HKHealthStore.isHealthDataAvailable() else {
-      reject("E_UNAVAILABLE", "HealthKit is not available on this device", nil)
-      return
+    if locationManager == nil {
+      let lm = CLLocationManager()
+      lm.delegate = self
+      self.locationManager = lm
     }
-
-    let store = HKHealthStore()
-    self.healthStore = store
-
-    let typesToShare: Set<HKSampleType> = [HKObjectType.workoutType()]
-    let typesToRead: Set<HKObjectType> = [HKObjectType.workoutType()]
-
-    store.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
-      if let error = error {
-        reject("E_AUTH_FAILED", error.localizedDescription, error)
-      } else {
-        resolve(success)
-      }
-    }
+    locationManager?.requestAlwaysAuthorization()
+    resolve(true)
   }
 
   // MARK: - Session Start/Stop
@@ -123,49 +110,10 @@ class BackgroundWorkoutModule: RCTEventEmitter, UNUserNotificationCenterDelegate
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    // Always start accelerometer — works on all iOS versions
     registerNotificationCategory()
     startAccelerometer()
-
-    // Try to start HKWorkoutSession for background execution (iOS 26+)
-    if #available(iOS 26.0, *) {
-      guard HKHealthStore.isHealthDataAvailable() else {
-        // No HealthKit but accelerometer is running
-        resolve(true)
-        return
-      }
-
-      if healthStore == nil {
-        healthStore = HKHealthStore()
-      }
-
-      guard let store = healthStore else {
-        resolve(true)
-        return
-      }
-
-      if let existing = workoutSession as? HKWorkoutSession, existing.state == .running {
-        resolve(true)
-        return
-      }
-
-      let config = HKWorkoutConfiguration()
-      config.activityType = .other
-      config.locationType = .unknown
-
-      do {
-        let session = try HKWorkoutSession(healthStore: store, configuration: config)
-        self.workoutSession = session
-        session.startActivity(with: Date())
-        resolve(true)
-      } catch {
-        // HKWorkoutSession failed but accelerometer is still running
-        resolve(true)
-      }
-    } else {
-      // Pre-iOS 26: accelerometer runs in foreground only (no HKWorkoutSession)
-      resolve(true)
-    }
+    startBackgroundLocationUpdates()
+    resolve(true)
   }
 
   @objc func stopSession(
@@ -173,14 +121,7 @@ class BackgroundWorkoutModule: RCTEventEmitter, UNUserNotificationCenterDelegate
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
     stopAccelerometer()
-
-    if #available(iOS 26.0, *) {
-      if let session = workoutSession as? HKWorkoutSession {
-        session.end()
-        self.workoutSession = nil
-      }
-    }
-
+    stopBackgroundLocationUpdates()
     resolve(true)
   }
 
@@ -189,12 +130,36 @@ class BackgroundWorkoutModule: RCTEventEmitter, UNUserNotificationCenterDelegate
     rejecter reject: RCTPromiseRejectBlock
   ) {
     let accelRunning = motionManager?.isDeviceMotionActive ?? false
-    if #available(iOS 26.0, *) {
-      let sessionRunning = (workoutSession as? HKWorkoutSession)?.state == .running
-      resolve(accelRunning || sessionRunning)
-    } else {
-      resolve(accelRunning)
+    resolve(accelRunning || backgroundLocationActive)
+  }
+
+  // MARK: - Background Location Keep-Alive
+  //
+  // CLLocationManager with allowsBackgroundLocationUpdates keeps the app's
+  // process alive when backgrounded so CMMotionManager continues delivering
+  // accelerometer readings for fall detection. Requires "location" in
+  // UIBackgroundModes and NSLocationAlwaysAndWhenInUseUsageDescription.
+
+  private func startBackgroundLocationUpdates() {
+    if locationManager == nil {
+      let lm = CLLocationManager()
+      lm.delegate = self
+      self.locationManager = lm
     }
+    guard let lm = locationManager else { return }
+
+    lm.allowsBackgroundLocationUpdates = true
+    lm.pausesLocationUpdatesAutomatically = false
+    lm.showsBackgroundLocationIndicator = true
+    lm.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    lm.distanceFilter = 100
+    lm.startUpdatingLocation()
+    backgroundLocationActive = true
+  }
+
+  private func stopBackgroundLocationUpdates() {
+    locationManager?.stopUpdatingLocation()
+    backgroundLocationActive = false
   }
 
   @objc func acknowledgeFallAlert(
@@ -1282,7 +1247,8 @@ const withBackgroundWorkout = (config) => {
   // iOS Configuration
   // =========================================================================
 
-  // 1. Entitlements: HealthKit
+  // 1. Entitlements: HealthKit (required by @kingstinct/react-native-healthkit
+  //    for reading step count, heart rate, and other metrics elsewhere in the app)
   config = withEntitlementsPlist(config, (config) => {
     config.modResults["com.apple.developer.healthkit"] = true;
     if (!config.modResults["com.apple.developer.healthkit.access"]) {
@@ -1291,18 +1257,18 @@ const withBackgroundWorkout = (config) => {
     return config;
   });
 
-  // 2. Info.plist: background modes + workout write description
+  // 2. Info.plist: background modes for location-based keep-alive
   config = withInfoPlist(config, (config) => {
     const modes = config.modResults.UIBackgroundModes || [];
+    if (!modes.includes("location")) {
+      modes.push("location");
+    }
     if (!modes.includes("processing")) {
       modes.push("processing");
     }
     config.modResults.UIBackgroundModes = modes;
 
     config.modResults.BGTaskSchedulerPermittedIdentifiers = ["com.vibecode.steadiday.background-workout"];
-
-    config.modResults.NSHealthUpdateUsageDescription =
-      "SteadiDay records a background safety workout session to keep fall detection active when the app is not in the foreground.";
 
     // Motion usage description for CMMotionManager
     if (!config.modResults.NSMotionUsageDescription) {

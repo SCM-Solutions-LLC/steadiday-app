@@ -36,7 +36,7 @@
         ],
         "UIBackgroundModes": [
           "remote-notification",
-          "remote-notification"
+          "location"
         ],
         "SKAdNetworkItems": [
           {
@@ -302,8 +302,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "SteadiDay reads your step count, heart rate, and other health metrics from Apple Health to display in the Health screen.",
-          "NSHealthUpdateUsageDescription": "SteadiDay records a background safety workout session to keep fall detection active when the app is not in the foreground."
+          "NSHealthShareUsageDescription": "SteadiDay reads your step count, heart rate, and other health metrics from Apple Health to display in the Health screen."
         }
       ],
       "./plugins/with-scene-delegate.js",

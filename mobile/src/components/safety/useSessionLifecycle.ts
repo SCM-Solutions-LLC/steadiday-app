@@ -9,11 +9,11 @@ const BACKGROUND_NOTIFICATION_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 /**
  * useSessionLifecycle
  * Monitors AppState changes during an active Safety Session.
- * When the app goes to background the HKWorkoutSession (started by the
- * safety session store) keeps the process alive so fall detection continues.
- * The "paused" notification is only scheduled when no workout session is
- * active (older iOS or failed authorization), since the HKWorkoutSession
- * keeps the JS thread alive and DeviceMotion running.
+ * When the app goes to background, CLLocationManager background updates
+ * (started by the safety session store) keep the process alive so fall
+ * detection continues. The "paused" notification is only scheduled when
+ * no background session is active (e.g. location auth denied), since the
+ * background location updates keep the JS thread alive and DeviceMotion running.
  */
 export function useSessionLifecycle() {
   const isSessionActive = useSafetySessionStore((s) => s.isSessionActive);
@@ -36,12 +36,12 @@ export function useSessionLifecycle() {
         const workoutActive = await isWorkoutRunning();
 
         if (workoutActive) {
-          // HKWorkoutSession keeps the process alive — fall detection
-          // continues in the background. No "paused" notification needed.
+          // Background location updates keep the process alive — fall
+          // detection continues in the background. No "paused" notification needed.
           return;
         }
 
-        // No workout session — schedule reminder so user knows fall
+        // No background session — schedule reminder so user knows fall
         // detection may not be running in background.
         if (sessionReminderEnabled && !notificationIdRef.current) {
           try {

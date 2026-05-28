@@ -2,7 +2,7 @@
   "expo": {
     "name": "SteadiDay",
     "slug": "steadiday",
-    "scheme": "vibecode",
+    "scheme": "steadiday",
     "version": "1.2.24",
     "description": "SteadiDay is a daily health and wellness assistant designed for adults 50 and older who live independently. The app helps manage medications with photo-based auto-fill, daily tasks and appointments, health metrics from Apple Health, and emergency contacts with SOS functionality. Features include large text, high-contrast design, fall detection, calendar and reminders sync, mind break games, and helpful tools like a magnifier and flashlight.",
     "orientation": "default",
@@ -194,7 +194,8 @@
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
-        "com.apple.developer.healthkit": true
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.sign-in-with-apple": "enabled"
       }
     },
     "android": {

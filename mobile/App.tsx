@@ -35,6 +35,8 @@ import {
   cancelMindBreaksReminder,
 } from "./src/utils/notifications";
 import { recordError } from "./src/utils/firebase";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import { migrateLocalDataToSupabase } from "./src/lib/supabaseMigration";
 
 // =============================================================================
 // GLOBAL ERROR HANDLER - Prevents crashes from unhandled JS exceptions
@@ -331,17 +333,33 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <ConfirmModalProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F7F7F7' }}>
-          <SafeAreaProvider>
-            <NavigationContainer ref={navigationRef}>
-              <RootNavigator />
-              <EmailVerificationHandler />
-              <StatusBar style="auto" />
-            </NavigationContainer>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      </ConfirmModalProvider>
+      <AuthProvider>
+        <SupabaseMigrationRunner />
+        <ConfirmModalProvider>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F7F7F7' }}>
+            <SafeAreaProvider>
+              <NavigationContainer ref={navigationRef}>
+                <RootNavigator />
+                <EmailVerificationHandler />
+                <StatusBar style="auto" />
+              </NavigationContainer>
+            </SafeAreaProvider>
+          </GestureHandlerRootView>
+        </ConfirmModalProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
+}
+
+function SupabaseMigrationRunner() {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    migrateLocalDataToSupabase(user.id).catch((error) => {
+      logger.error("[App] Supabase migration failed:", error);
+    });
+  }, [user?.id]);
+
+  return null;
 }

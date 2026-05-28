@@ -139,7 +139,7 @@ class GoogleCalendarService {
 
       // Create OAuth redirect URI
       const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "vibecode",
+        scheme: "steadiday",
         path: "oauth/google-calendar",
       });
 

@@ -115,25 +115,17 @@ async function safeDelete(uri: string | null | undefined): Promise<void> {
   }
 }
 
-export interface VisionExtractOptions {
-  /**
-   * If false, the extractor will not delete the source photo URI — the caller
-   * is responsible for it (e.g. when displaying a preview before the extractor
-   * completes). The preprocessed temp file is always deleted regardless.
-   * Defaults to true.
-   */
-  deleteSourceUri?: boolean;
-}
-
 /**
  * Extract medication info from a photo URI.
- * Always deletes the preprocessed temp file in a `finally` block; the source
- * URI is deleted as well unless the caller opts out (see VisionExtractOptions).
- * No photo ever persists past this call.
+ *
+ * Always deletes BOTH the source photo URI and the preprocessed temp file in
+ * a `finally` block — no photo ever persists past this call. The source URI
+ * is only valid during the awaited call (callers that show a preview should
+ * use the URI directly; the file is guaranteed to exist until the promise
+ * settles, then it's gone).
  */
 export async function extractMedicationFromPhoto(
-  photoUri: string,
-  options?: VisionExtractOptions
+  photoUri: string
 ): Promise<ExtractedMedication> {
   let preparedUri: string | null = null;
   try {
@@ -152,9 +144,8 @@ export async function extractMedicationFromPhoto(
     logger.error("[vision] Medication extraction failed:", error);
     return EMPTY_MEDICATION;
   } finally {
-    const deleteSource = options?.deleteSourceUri ?? true;
     await Promise.allSettled([
-      deleteSource ? safeDelete(photoUri) : Promise.resolve(),
+      safeDelete(photoUri),
       preparedUri && preparedUri !== photoUri ? safeDelete(preparedUri) : Promise.resolve(),
     ]);
   }
@@ -162,11 +153,11 @@ export async function extractMedicationFromPhoto(
 
 /**
  * Extract insurance card fields from a photo URI.
- * Same cleanup semantics as extractMedicationFromPhoto.
+ * Same cleanup semantics as extractMedicationFromPhoto — always deletes
+ * source + preprocessed temp files in `finally`.
  */
 export async function extractInsuranceFromPhoto(
-  photoUri: string,
-  options?: VisionExtractOptions
+  photoUri: string
 ): Promise<ExtractedInsuranceCard> {
   let preparedUri: string | null = null;
   try {
@@ -185,9 +176,8 @@ export async function extractInsuranceFromPhoto(
     logger.error("[vision] Insurance extraction failed:", error);
     return EMPTY_INSURANCE;
   } finally {
-    const deleteSource = options?.deleteSourceUri ?? true;
     await Promise.allSettled([
-      deleteSource ? safeDelete(photoUri) : Promise.resolve(),
+      safeDelete(photoUri),
       preparedUri && preparedUri !== photoUri ? safeDelete(preparedUri) : Promise.resolve(),
     ]);
   }

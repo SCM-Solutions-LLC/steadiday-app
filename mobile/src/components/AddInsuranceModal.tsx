@@ -234,7 +234,10 @@ export default function AddInsuranceModal({ visible, onClose, editingCard }: Add
     try {
       // Caller (this component) manages the source URI lifecycle and deletes
       // it in the finally block below, so we tell the extractor to skip it.
-      const data = await extractInsuranceFromPhoto(imageUri, { deleteSourceUri: false });
+      // The Vision extractor owns deletion of imageUri (its `finally` block
+       // always runs). The modal's own finally below clears the preview state
+       // and idempotent-deletes the same file as a defensive second pass.
+      const data = await extractInsuranceFromPhoto(imageUri);
 
       if (!hasAnyExtractedField(data)) {
         // Last-resort fallback to legacy on-device OCR

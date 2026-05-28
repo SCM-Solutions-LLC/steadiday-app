@@ -138,8 +138,8 @@ escalationRouter.post("/fall-alert", async (c) => {
       escalationId: escalation.escalationId,
       created,
       deadlineAt: escalation.deadlineAt,
-      latitude: latitude ?? null,
-      longitude: longitude ?? null,
+      latitude: latitude != null ? Math.round(latitude * 1000) / 1000 : null,
+      longitude: longitude != null ? Math.round(longitude * 1000) / 1000 : null,
     });
 
     return c.json({

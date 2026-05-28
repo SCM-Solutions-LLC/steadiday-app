@@ -11,7 +11,7 @@ import { useTaskStore } from "./src/state/stores/taskStore";
 import { useMedicationStore } from "./src/state/stores/medicationStore";
 import { useSubscriptionStore } from "./src/state/stores/subscriptionStore";
 import { ESSENTIALS_LIMITS } from "./src/config/featureAccess";
-import { View, ActivityIndicator, Text, ScrollView, Pressable } from "react-native";
+import { View, ActivityIndicator, Text, ScrollView, Pressable, AppState as RNAppState } from "react-native";
 import PinLockScreen from "./src/components/PinLockScreen";
 import EmailVerificationHandler from "./src/components/EmailVerificationHandler";
 import { ConfirmModalProvider } from "./src/components/ConfirmModal";
@@ -36,7 +36,9 @@ import {
 } from "./src/utils/notifications";
 import { recordError } from "./src/utils/firebase";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
-import { migrateLocalDataToSupabase } from "./src/lib/supabaseMigration";
+import { migrateLocalDataToSupabase, pushLocalDataToSupabase } from "./src/lib/supabaseMigration";
+import { syncDailyActivitySummary } from "./src/services/activitySync";
+import { drainSyncQueue, registerSyncQueueDrain } from "./src/services/syncService";
 
 // =============================================================================
 // GLOBAL ERROR HANDLER - Prevents crashes from unhandled JS exceptions
@@ -353,13 +355,39 @@ export default function App() {
 
 function SupabaseMigrationRunner() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
+  // One-time migration + initial bulk push when a user first appears.
   useEffect(() => {
-    if (!user?.id) return;
-    migrateLocalDataToSupabase(user.id).catch((error) => {
-      logger.error("[App] Supabase migration failed:", error);
+    if (!userId) return;
+    (async () => {
+      try {
+        await migrateLocalDataToSupabase(userId);
+        await pushLocalDataToSupabase(userId);
+      } catch (error) {
+        logger.error("[App] Supabase initial sync failed:", error);
+      }
+    })();
+  }, [userId]);
+
+  // Activity summary on every foreground while signed in.
+  useEffect(() => {
+    if (!userId) return;
+    syncDailyActivitySummary(userId);
+    const subscription = RNAppState.addEventListener("change", (next) => {
+      if (next === "active") syncDailyActivitySummary(userId);
     });
-  }, [user?.id]);
+    return () => subscription.remove();
+  }, [userId]);
+
+  // Drain offline queue on network reconnect + once on startup.
+  useEffect(() => {
+    drainSyncQueue();
+    const unsubscribe = registerSyncQueueDrain();
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
 
   return null;
 }

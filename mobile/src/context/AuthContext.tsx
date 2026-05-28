@@ -9,6 +9,7 @@ import React, {
 } from "react";
 
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { setSyncUserId } from "../services/storeSync";
 import { logger } from "../utils/logger";
 
 interface AuthContextType {
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         if (error) logger.error("[AuthContext] getSession error:", error.message);
         setSession(data.session ?? null);
+        setSyncUserId(data.session?.user?.id ?? null);
       })
       .catch((error) => {
         logger.error("[AuthContext] getSession threw:", error);
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
+      setSyncUserId(nextSession?.user?.id ?? null);
     });
 
     return () => {

@@ -12,6 +12,7 @@ import {
   deleteCalendarEvent,
 } from "../../utils/calendarSync";
 import { syncTaskCompletionToExternal } from "../../utils/twoWaySync";
+import { syncTaskDelete, syncTaskUpsert } from "../../services/storeSync";
 import { secureWarn } from "../../utils/secureLogger";
 import { formatDateKey, getTaskDateKey } from "../../utils/time";
 import { useSettingsStore } from "./settingsStore";
@@ -114,6 +115,8 @@ export const useTaskStore = create<TaskStore>()(
         set((state) => ({
           tasks: [...state.tasks, taskWithNotification],
         }));
+
+        syncTaskUpsert(taskWithNotification);
       },
 
       // Batch add tasks atomically (for onboarding import)
@@ -185,6 +188,7 @@ export const useTaskStore = create<TaskStore>()(
           set((state) => ({
             tasks: [...state.tasks, ...tasksToAdd],
           }));
+          tasksToAdd.forEach(syncTaskUpsert);
         }
       },
 
@@ -234,6 +238,9 @@ export const useTaskStore = create<TaskStore>()(
               : t
           ),
         }));
+
+        const updated = get().tasks.find((t) => t.id === id);
+        if (updated) syncTaskUpsert(updated);
       },
 
       // Remove task and clean up notifications/calendar
@@ -251,6 +258,8 @@ export const useTaskStore = create<TaskStore>()(
         set((state) => ({
           tasks: state.tasks.filter((t) => t.id !== id),
         }));
+
+        syncTaskDelete(id);
       },
 
       // Toggle task completion and sync externally
@@ -269,6 +278,7 @@ export const useTaskStore = create<TaskStore>()(
 
         // Sync completion status to external source if applicable
         const task = get().tasks.find((t) => t.id === id);
+        if (task) syncTaskUpsert(task);
         if (task?.syncSource) {
           await syncTaskCompletionToExternal(task);
         }

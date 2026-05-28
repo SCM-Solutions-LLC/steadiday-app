@@ -7,6 +7,11 @@ import {
   cancelNotificationsForMedication,
 } from "../../utils/notifications";
 import { syncMedicationToCalendar } from "../../utils/calendarSync";
+import {
+  syncMedicationDelete,
+  syncMedicationLogUpsert,
+  syncMedicationUpsert,
+} from "../../services/storeSync";
 import { secureError } from "../../utils/secureLogger";
 import { useSettingsStore } from "./settingsStore";
 
@@ -80,6 +85,8 @@ export const useMedicationStore = create<MedicationStore>()(
         set((state) => ({
           medications: [...state.medications, medication],
         }));
+
+        syncMedicationUpsert(medication);
       },
 
       // Update medication
@@ -94,6 +101,8 @@ export const useMedicationStore = create<MedicationStore>()(
             m.id === id ? updated : m
           ),
         }));
+
+        syncMedicationUpsert(updated);
 
         // Reschedule notifications if times, alerts, or reminder settings changed
         if (
@@ -138,16 +147,20 @@ export const useMedicationStore = create<MedicationStore>()(
             (l) => l.medicationId !== id
           ),
         }));
+
+        syncMedicationDelete(id);
       },
 
       // Log medication taken/skipped/missed
-      logMedication: (log) =>
+      logMedication: (log) => {
         set((state) => ({
           medicationLogs: [...state.medicationLogs, log],
-        })),
+        }));
+        syncMedicationLogUpsert(log);
+      },
 
       // Update existing log
-      updateMedicationLog: (id, status, actualTime) =>
+      updateMedicationLog: (id, status, actualTime) => {
         set((state) => ({
           medicationLogs: state.medicationLogs.map((log) =>
             log.id === id
@@ -158,7 +171,10 @@ export const useMedicationStore = create<MedicationStore>()(
                 }
               : log
           ),
-        })),
+        }));
+        const updated = get().medicationLogs.find((l) => l.id === id);
+        if (updated) syncMedicationLogUpsert(updated);
+      },
 
       // Remove today's medication log (for unchecking)
       removeMedicationLogForToday: (medicationId) => {

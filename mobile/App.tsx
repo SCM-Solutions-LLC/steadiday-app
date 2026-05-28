@@ -39,6 +39,8 @@ import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { migrateLocalDataToSupabase, pushLocalDataToSupabase } from "./src/lib/supabaseMigration";
 import { syncDailyActivitySummary } from "./src/services/activitySync";
 import { drainSyncQueue, registerSyncQueueDrain } from "./src/services/syncService";
+import { googleCalendarService } from "./src/sync/googleCalendarSync";
+import { useIntegrationsStore } from "./src/state/stores/integrationsStore";
 
 // =============================================================================
 // GLOBAL ERROR HANDLER - Prevents crashes from unhandled JS exceptions
@@ -294,6 +296,29 @@ export default function App() {
 
     initAndVerify();
     setIsReady(true);
+
+    // Reconcile Google Calendar connection state with SecureStore.
+    // The Zustand flag is persisted but the singleton's in-memory state is
+    // not, so on a cold start we ask the service to read SecureStore and
+    // then mirror the result into the integrations store. Prevents drift
+    // after a reinstall, manual SecureStore wipe, or refresh-token failure.
+    googleCalendarService
+      .initialize()
+      .then((connected) => {
+        const store = useIntegrationsStore.getState();
+        const storeSaysConnected = store.integrations.find(
+          (i) => i.id === "google-calendar"
+        )?.isConnected ?? false;
+        if (connected !== storeSaysConnected) {
+          store.setGoogleCalendarConnected(
+            connected,
+            connected ? googleCalendarService.getUserEmail() : null
+          );
+        }
+      })
+      .catch((error) => {
+        logger.error("[App] Google Calendar reconciliation failed:", error);
+      });
 
     // Perform two-way calendar sync if enabled
     if (calendarSyncEnabled) {

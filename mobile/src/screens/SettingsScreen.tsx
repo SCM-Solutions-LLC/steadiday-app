@@ -16,6 +16,7 @@ import { getIconColor, getIconBgColor, IconColorKey } from "../constants/iconCol
 import { isAndroidFeaturesActive } from "../config/platformConfig";
 import * as Haptics from "expo-haptics";
 import { useSlowMode } from "../utils/useSlowMode";
+import { useAuth } from "../context/AuthContext";
 
 // Use React Native's built-in __DEV__ global for dev checks
 const isDev = typeof __DEV__ !== "undefined" && __DEV__;
@@ -173,6 +174,7 @@ export default function SettingsScreen() {
   const textClasses = getTextSizeClasses(textSize);
   const developerMode = useSettingsStore((s) => s.developerMode);
   const hapticEnabled = useSettingsStore((s) => s.soundSettings?.hapticFeedbackEnabled) ?? true;
+  const { user: cloudUser, signOut: cloudSignOut } = useAuth();
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -673,6 +675,25 @@ export default function SettingsScreen() {
                   title="Connected Apps"
                   subtitle="Health apps, calendars, and more"
                   onPress={() => navigation.navigate("ConnectedApps" as never)}
+                />
+                <View className="mx-4" style={{ height: 1, backgroundColor: colors.divider }} />
+                <SettingsRow
+                  icon={cloudUser ? "cloud-done" : "cloud-outline"}
+                  iconColor={getIconColor("connectedApps", isDark)}
+                  iconBgColor={getIconBgColor(getIconColor("connectedApps", isDark))}
+                  title={cloudUser ? "Cloud Account" : "Sign In to Back Up"}
+                  subtitle={
+                    cloudUser
+                      ? cloudUser.email ?? "Signed in"
+                      : "Optional — keep your SteadiDay data safe"
+                  }
+                  onPress={() => {
+                    if (cloudUser) {
+                      cloudSignOut();
+                    } else {
+                      navigation.navigate("SupabaseSignIn" as never);
+                    }
+                  }}
                 />
               </View>
 

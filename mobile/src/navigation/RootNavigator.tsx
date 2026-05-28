@@ -115,6 +115,9 @@ import DeveloperSettingsScreen from "../screens/settings/DeveloperSettingsScreen
 import LocationSettingsScreen from "../screens/settings/LocationSettingsScreen";
 import CalendarPickerScreen from "../screens/CalendarPickerScreen";
 import RemindersListPickerScreen from "../screens/RemindersListPickerScreen";
+import SupabaseSignInScreen from "../screens/auth/SupabaseSignInScreen";
+import SupabaseSignUpScreen from "../screens/auth/SupabaseSignUpScreen";
+import SupabaseForgotPasswordScreen from "../screens/auth/SupabaseForgotPasswordScreen";
 
 export type OnboardingStackParamList = {
   Welcome: undefined;
@@ -209,6 +212,10 @@ export type RootStackParamList = {
   // Calendar/Reminders picker screens
   CalendarPicker: { fromOnboarding?: boolean };
   RemindersListPicker: { fromOnboarding?: boolean };
+  // Cloud account (Supabase) — opt-in for existing users
+  SupabaseSignIn: undefined;
+  SupabaseSignUp: undefined;
+  SupabaseForgotPassword: undefined;
 };
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
@@ -981,6 +988,33 @@ export default function RootNavigator() {
             component={RemindersListPickerScreen}
             options={{
               headerShown: false,
+              presentation: "modal",
+            }}
+          />
+          <RootStack.Screen
+            name="SupabaseSignIn"
+            component={SupabaseSignInScreen}
+            options={{
+              headerShown: true,
+              headerTitle: "Sign In",
+              presentation: "modal",
+            }}
+          />
+          <RootStack.Screen
+            name="SupabaseSignUp"
+            component={SupabaseSignUpScreen}
+            options={{
+              headerShown: true,
+              headerTitle: "Create Account",
+              presentation: "modal",
+            }}
+          />
+          <RootStack.Screen
+            name="SupabaseForgotPassword"
+            component={SupabaseForgotPasswordScreen}
+            options={{
+              headerShown: true,
+              headerTitle: "Reset Password",
               presentation: "modal",
             }}
           />

@@ -1,4 +1,3 @@
-import "@vibecodeapp/proxy"; // DO NOT REMOVE OTHERWISE VIBECODE PROXY WILL NOT WORK
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import "./env";
@@ -255,6 +254,7 @@ startEscalationWorker();
 const port = Number(process.env.PORT) || 3000;
 
 export default {
+  hostname: "0.0.0.0",
   port,
   fetch: app.fetch,
 };

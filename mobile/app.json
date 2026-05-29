@@ -2,8 +2,8 @@
   "expo": {
     "name": "SteadiDay",
     "slug": "steadiday",
-    "scheme": "steadiday",
-    "version": "1.2.24",
+    "scheme": "vibecode",
+    "version": "1.2.19",
     "description": "SteadiDay is a daily health and wellness assistant designed for adults 50 and older who live independently. The app helps manage medications with photo-based auto-fill, daily tasks and appointments, health metrics from Apple Health, and emergency contacts with SOS functionality. Features include large text, high-contrast design, fall detection, calendar and reminders sync, mind break games, and helpful tools like a magnifier and flashlight.",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -18,7 +18,7 @@
       "appleTeamId": "JWDS8GNFPP",
       "supportsTablet": true,
       "bundleIdentifier": "com.vibecode.steadiday",
-      "buildNumber": "63",
+      "buildNumber": "60",
       "infoPlist": {
         "NSCameraUsageDescription": "SteadiDay uses the camera to capture photos inside the app before you publish them.",
         "NSMicrophoneUsageDescription": "SteadiDay uses the microphone to record audio tracks that the app attaches to your creations.",
@@ -27,16 +27,9 @@
         "NSContactsUsageDescription": "SteadiDay accesses your contacts to help you find people you already know inside the app.",
         "NSCalendarsUsageDescription": "SteadiDay uses your calendar to place app events onto your device schedule.",
         "NSMotionUsageDescription": "SteadiDay uses motion data to run movement-based features you enable in the app.",
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.942738976594-divmvdbj51ne6cisa23aq0q49nm2nooa"
-            ]
-          }
-        ],
         "UIBackgroundModes": [
           "remote-notification",
-          "location"
+          "remote-notification"
         ],
         "SKAdNetworkItems": [
           {
@@ -201,15 +194,13 @@
       },
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
-        "com.apple.developer.healthkit": true,
-        "com.apple.developer.sign-in-with-apple": "enabled"
+        "com.apple.developer.healthkit": true
       }
     },
     "android": {
       "edgeToEdgeEnabled": true,
       "userInterfaceStyle": "automatic",
       "package": "com.vibecode.steadiday",
-"versionCode": 9,
       "config": {},
       "permissions": [
         "android.permission.health.READ_STEPS",
@@ -234,10 +225,9 @@
             "deploymentTarget": "17.0"
           },
           "android": {
-            "compileSdkVersion": 36,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "minSdkVersion": 26,
-            "buildToolsVersion": "36.0.0"
+            "minSdkVersion": 26
           }
         }
       ],
@@ -302,7 +292,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "SteadiDay reads your step count, heart rate, and other health metrics from Apple Health to display in the Health screen."
+          "NSHealthShareUsageDescription": "SteadiDay reads your step count, heart rate, and other health metrics from Apple Health to display in the Health screen.",
+          "NSHealthUpdateUsageDescription": "SteadiDay records a background safety workout session to keep fall detection active when the app is not in the foreground."
         }
       ],
       "./plugins/with-scene-delegate.js",

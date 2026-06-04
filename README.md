@@ -2,61 +2,89 @@
 
 iOS wellness app for adults 50+ focused on balance and fall prevention. Live on the [App Store](https://apps.apple.com) since March 14, 2025.
 
-Built with Expo (React Native). Managed and submitted via EAS.
+Built with Expo (React Native) and a Node/PostgreSQL backend. Managed and submitted via EAS.
+
+## Repo structure
+
+```
+steadiday-app/
+├── mobile/          # Expo/React Native iOS app (TypeScript)
+├── backend/         # API server (Node.js + PostgreSQL)
+├── .gitignore       # Active — git reads this one
+├── gitignore        # ⚠️ Inactive — missing dot prefix, git ignores it
+├── CHANGES.md       # Changelog
+├── changelog.txt    # Legacy changelog (duplicate — consider removing)
+└── package-lock.json
+```
 
 ## Tech stack
 
 | Layer | Tool |
 |-------|------|
-| Framework | Expo SDK 54 / React Native |
-| Language | JavaScript |
+| Mobile framework | Expo SDK 54 / React Native |
+| Language | TypeScript |
 | Navigation | Expo Router |
 | Health data | Apple HealthKit |
 | Subscriptions | RevenueCat |
 | Auth | Google Sign-In |
+| Backend | Node.js + PostgreSQL |
 | Build & submit | EAS (Expo Application Services) |
 | IDE | Cursor |
 
 ## Prerequisites
 
 - Node.js v18+
-- Expo CLI (`npm install -g expo`)
-- EAS CLI (`npm install -g eas-cli`)
+- EAS CLI: `npm install -g eas-cli`
 - Xcode (for iOS simulator)
 - Active Apple Developer account
-- RevenueCat API key (iOS)
+- RevenueCat iOS API key
 - Google Sign-In iOS client ID
-- `GoogleService-Info.plist` (Firebase config — do not commit)
+- `mobile/GoogleService-Info.plist` (Firebase config — gitignored, do not commit)
 
 ## Setup
 
 ```bash
 git clone https://github.com/SCM-Solutions-LLC/steadiday-app.git
 cd steadiday-app
+```
+
+### Mobile app
+
+```bash
+cd mobile
 npm install
 ```
 
-Create a `.env` file at the project root with your keys (see `.env.example`):
+Create `mobile/.env` from the example:
 
 ```
 REVENUECAT_IOS_API_KEY=your_key_here
 GOOGLE_IOS_CLIENT_ID=your_client_id_here
 ```
 
-Place `GoogleService-Info.plist` in the project root. This file is gitignored — get it from the team vault or Firebase console.
+Place `GoogleService-Info.plist` inside `mobile/`. This file is gitignored — get it from Firebase console → Project Settings → iOS app.
+
+### Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+# Fill in DATABASE_URL and other vars
+```
 
 ## Running locally
 
 ```bash
+cd mobile
 npx expo start
 # Press i for iOS simulator
 ```
 
-For a physical device, use Expo Go or a development build via EAS.
-
 ## Building for TestFlight
 
 ```bash
+cd mobile
 eas build --platform ios --profile preview
 ```
 
@@ -66,23 +94,22 @@ eas build --platform ios --profile preview
 eas submit --platform ios
 ```
 
-Do not use the Expo web dashboard for submission — use the CLI directly to avoid session expiration issues.
+Always use the CLI — do not use the Expo web dashboard. It causes session expiration mid-submit.
 
-## App Store metadata
+## App Store assets
 
-Current version: **1.2.x** (pending review)
+| Asset | Location |
+|-------|---------|
+| Screenshots | `mobile/assets/screenshots/` |
+| Preview video | Google Drive → SteadiDay → App Store |
+| App icon | `mobile/assets/icon.png` |
+| Splash screen | `mobile/assets/splash.png` |
 
-Key assets location:
-- Screenshots: `assets/screenshots/`
-- Preview video: stored in Google Drive → SteadiDay → App Store
-- App icon: `assets/icon.png`
-- Splash screen: `assets/splash.png`
-
-App Store screenshot specs: 6.9" display required. No device frames. iOS status bar only (no Android).
+Screenshot specs: 6.9" display required. No device frames. iOS status bar only — no Android status bars.
 
 ## HealthKit
 
-The app uses HealthKit for balance and activity data. `HKWorkoutSession` is not in use — do not add it (rejected by App Store review). Use `HKWorkoutBuilder` or passive queries instead.
+Uses HealthKit for balance and activity data. `HKWorkoutSession` is explicitly excluded — do not add it (triggers App Store rejection). Use `HKWorkoutBuilder` or passive queries instead.
 
 Required `Info.plist` keys:
 
@@ -93,21 +120,34 @@ NSHealthUpdateUsageDescription
 
 ## Caregiver feature
 
-The app includes a caregiver summary screen that generates a shareable report of a user's balance activity. This feature supports a caregiver-first marketing angle — adult children installing the app for a 50+ parent.
+The app includes a caregiver summary screen that generates a shareable report of a user's balance activity. This supports a caregiver-first marketing angle — adult children installing the app for a 50+ parent.
 
 ## Permissions
 
-On first launch, the app requests:
-1. HealthKit access
-2. Notifications
+On first launch the app requests HealthKit access and notifications. Notifications can be skipped. HealthKit is required for core functionality.
 
-The user can skip notifications. HealthKit is required for core functionality. If Apple Review asks about the Contacts permission, the app does not request contacts — confirm this is not present in the manifest before each submission.
+Before each App Store submission: confirm the Contacts permission is not in the manifest. The app does not use contacts, and Apple will flag it if the permission appears.
 
-## Known issues / watch list
+## Known issues
 
-- SDK 53→54 Metro config: if build fails after an SDK upgrade, check `metro.config.js` for breaking changes
-- Session expiration during EAS submit: always use `eas submit --platform ios` via CLI, not the web dashboard
-- App name character limit: 30 characters max for App Store display name
+- **SDK upgrades:** After any Expo SDK bump, check `metro.config.js` — breaking changes have caused build failures before (SDK 53→54).
+- **EAS submit session expiry:** Always run `eas submit --platform ios` from CLI. The web dashboard drops sessions mid-submit.
+- **App name limit:** 30 characters max for the App Store display name.
+
+## ⚠️ Housekeeping needed
+
+Two issues in this repo that should be fixed:
+
+**1. `gitignore` file is inactive.** The file named `gitignore` (no dot) is never read by git. It contains important exclusions (`.env` files, Firebase configs, `mobile/eas.json`). Merge its contents into `.gitignore`, then delete it:
+
+```bash
+cat gitignore >> .gitignore
+git rm gitignore
+git commit -m "Merge gitignore into .gitignore"
+git push
+```
+
+**2. Two changelog files.** Both `CHANGES.md` and `changelog.txt` exist. Pick one and delete the other to avoid split history.
 
 ## Related
 

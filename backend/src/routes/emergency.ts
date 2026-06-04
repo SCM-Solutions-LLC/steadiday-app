@@ -76,7 +76,7 @@ emergencyRouter.post("/sms", async (c) => {
 
   // Handle opt-in confirmation SMS
   if (action === "opt_in_confirmation") {
-    const { contactName, contactPhone, userName } = parsed.data;
+    const { contactPhone, userName } = parsed.data;
     if (!contactPhone || !userName) {
       logEmergency("warn", "missing_opt_in_fields", { ip });
       return c.json({ error: "contactPhone and userName are required for opt_in_confirmation" }, 400);

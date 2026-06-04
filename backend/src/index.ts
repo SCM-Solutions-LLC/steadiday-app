@@ -35,14 +35,12 @@ app.use("*", async (c, next) => {
 const allowed = [
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-  /^https:\/\/[a-z0-9-]+\.dev\.vibecode\.run$/,
-  /^https:\/\/[a-z0-9-]+\.vibecode\.run$/,
+  /^https:\/\/steadiday-app\.fly\.dev$/,
 ];
 
 const emergencyAllowedOrigins = [
   /^http:\/\/localhost(:\d+)?$/,
-  /^https:\/\/[a-z0-9-]+\.dev\.vibecode\.run$/,
-  /^https:\/\/[a-z0-9-]+\.vibecode\.run$/,
+  /^https:\/\/steadiday-app\.fly\.dev$/,
 ];
 
 app.use(

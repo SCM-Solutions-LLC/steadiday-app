@@ -52,7 +52,7 @@ const ENVIRONMENTS = {
   },
   production: {
     apiBaseUrl: process.env.EXPO_PUBLIC_BACKEND_URL
-      || "https://api.steadiday.com",
+      || "https://steadiday-app.fly.dev",
     enableLogging: false,
     enableDebugTools: false,
     name: "production" as const,

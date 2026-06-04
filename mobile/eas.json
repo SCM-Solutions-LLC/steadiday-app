@@ -1,33 +1,42 @@
 {
-  "cli": {
-    "version": ">= 19.0.5",
-    "appVersionSource": "remote"
-  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "development",
-      "android": {
-        "buildType": "apk"
+      "ios": {
+        "simulator": true
       }
     },
     "preview": {
-      "distribution": "internal",
-      "environment": "development",
-      "android": {
-        "buildType": "apk"
-      }
+      "distribution": "internal"
     },
     "production": {
-      "environment": "production",
-      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_GA4_API_SECRET": "U-L-yjGqRcOYGfEdpTtWPA",
+        "EXPO_PUBLIC_VIBECODE_REVENUECAT_APPLE_KEY": "appl_AflRBOTgPjhiVlNEEFoEktprTzM",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "806780957854-7q62b6m0th9lh5e4kgj4dp27at46r1b3.apps.googleusercontent.com",
+        "EXPO_PUBLIC_VIBECODE_REVENUECAT_TEST_KEY": "test_bAcPlziQebihSTYUxOenedYnZtk",
+        "EXPO_PUBLIC_BACKEND_URL": "https://steadiday-app.fly.dev",
+        "BACKEND_URL": "https://steadiday-app.fly.dev",
+        "EXPO_PUBLIC_EMERGENCY_API_SECRET": "steadiday-sos-2026-x7k9m2p4",
+        "EXPO_PUBLIC_VIBECODE_ELEVENLABS_API_KEY": "elevenlabs-api-key-oa9Shahx4Zi4oof2bei5kee9nee7eeng-n0tr3al",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "806780957854-o67jtg94pa97plfundpvr02b46ocahv9.apps.googleusercontent.com",
+        "EXPO_PUBLIC_VIBECODE_BACKEND_URL": "https://steadiday-app.fly.dev",
+        "EXPO_PUBLIC_VIBECODE_GOOGLE_API_KEY": "UeHoh2oot2IWe6ooW4Oofahd6waebeiw-n0tr3al"
+      },
+      "ios": {
+        "distribution": "store"
+      },
       "android": {
-        "buildType": "app-bundle"
+        "distribution": "store"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6758526744"
+      }
+    }
   }
 }

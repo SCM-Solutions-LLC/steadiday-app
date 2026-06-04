@@ -9,7 +9,7 @@ Does not support video and audio generation.
 import { logger } from "../utils/logger";
 
 // API endpoint configuration
-const baseUrl = "https://api.vibecodeapp.com";
+const baseUrl = "https://steadiday-backend.fly.dev";
 const endpoint = "/api/storage/generate-image";
 
 /**

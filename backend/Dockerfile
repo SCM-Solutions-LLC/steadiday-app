@@ -2,14 +2,16 @@ FROM oven/bun:1-alpine
 
 WORKDIR /app
 
+# Install dependencies using the committed lockfile for reproducible builds
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
+RUN bun install --frozen-lockfile
 
-COPY src ./src
+# Copy application source
 COPY tsconfig.json ./
+COPY src ./src
 
-# Create data directory for SQLite (volume mounts here in production)
-RUN mkdir -p /data
+# Directory for the SQLite database (matches the path used in src/lib/escalation-store.ts)
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 

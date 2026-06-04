@@ -38,7 +38,6 @@ import { logger } from "../utils/logger";
 const ENVIRONMENTS = {
   development: {
     apiBaseUrl: process.env.EXPO_PUBLIC_BACKEND_URL
-      || process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL
       || "http://localhost:3000",
     enableLogging: true,
     enableDebugTools: true,
@@ -53,8 +52,7 @@ const ENVIRONMENTS = {
   },
   production: {
     apiBaseUrl: process.env.EXPO_PUBLIC_BACKEND_URL
-      || process.env.EXPO_PUBLIC_VIBECODE_BACKEND_URL
-      || "https://api.steadiday.com",
+      || "https://steadiday-app.fly.dev",
     enableLogging: false,
     enableDebugTools: false,
     name: "production" as const,

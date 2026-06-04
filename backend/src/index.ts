@@ -35,12 +35,12 @@ app.use("*", async (c, next) => {
 const allowed = [
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-  /^https:\/\/steadiday-backend\.fly\.dev$/,
+  /^https:\/\/steadiday-app\.fly\.dev$/,
 ];
 
 const emergencyAllowedOrigins = [
   /^http:\/\/localhost(:\d+)?$/,
-  /^https:\/\/steadiday-backend\.fly\.dev$/,
+  /^https:\/\/steadiday-app\.fly\.dev$/,
 ];
 
 app.use(
@@ -252,6 +252,7 @@ startEscalationWorker();
 const port = Number(process.env.PORT) || 3000;
 
 export default {
+  hostname: "0.0.0.0",
   port,
   fetch: app.fetch,
 };

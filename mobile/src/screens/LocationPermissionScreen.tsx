@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { Screen } from "../components/Screen";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { OnboardingStackParamList } from "../navigation/RootNavigator";
@@ -8,7 +8,6 @@ import * as Location from "expo-location";
 import { useTheme } from "../utils/useTheme";
 import { useSettingsStore } from "../state/stores/settingsStore";
 import { getTextSizeClasses } from "../utils/textSizes";
-import { useSlowMode } from "../utils/useSlowMode";
 import Button from "../components/Button";
 import { BackButton } from "../components/ui";
 import { logger } from "../utils/logger";
@@ -21,7 +20,6 @@ export default function LocationPermissionScreen({ navigation }: Props) {
   const { colors, primary } = useTheme();
   const textSize = useSettingsStore((s) => s.textSize);
   const textClasses = getTextSizeClasses(textSize);
-  const { minTouchTarget } = useSlowMode();
   const [isLoading, setIsLoading] = useState(false);
   const [permissionRequested, setPermissionRequested] = useState(false);
 
@@ -44,10 +42,6 @@ export default function LocationPermissionScreen({ navigation }: Props) {
   };
 
   const handleContinue = () => {
-    navigation.navigate("EmergencyContact");
-  };
-
-  const handleSkip = () => {
     navigation.navigate("EmergencyContact");
   };
 
@@ -103,7 +97,7 @@ export default function LocationPermissionScreen({ navigation }: Props) {
         {/* Buttons */}
         <View className="mt-8 pt-4">
           <Button
-            title={permissionRequested ? "Continue" : "Continue"}
+            title="Continue"
             onPress={permissionRequested ? handleContinue : handleEnableLocation}
             variant="primary"
             size="large"
@@ -113,13 +107,6 @@ export default function LocationPermissionScreen({ navigation }: Props) {
             accessibilityLabel={permissionRequested ? "Continue to next step" : "Continue to enable location services"}
             style={{ marginBottom: 12 }}
           />
-          {!permissionRequested && (
-            <Pressable onPress={handleSkip} className="items-center py-2" style={{ minHeight: minTouchTarget }}>
-              <Text className={textClasses.body} style={{ color: colors.textTertiary }}>
-                Skip for now
-              </Text>
-            </Pressable>
-          )}
         </View>
       </ScrollView>
     </Screen>
